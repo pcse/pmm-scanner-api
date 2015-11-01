@@ -11,8 +11,9 @@ var MYSQL_DB_HOST 	= process.env.OPENSHIFT_MYSQL_DB_HOST 	|| '127.0.0.1';
 var MYSQL_DB_PORT 	= process.env.OPENSHIFT_MYSQL_DB_PORT 	|| '63966';
 var APP_MAIN_HOST 	= process.env.OPENSHIFT_NODEJS_IP 		|| '0.0.0.0';
 var APP_MAIN_PORT 	= process.env.OPENSHIFT_NODEJS_PORT 	|| 8000;
-var APP_UDP_PORT 	= 8000;
+var APP_UDP_PORT 	= 7777;
 
+var socket 	= require('socket.io');
 var client 	= require('dgram').createSocket('udp4');
 var http 	= require('http');
 var mysql   = require('mysql').createConnection({
@@ -34,7 +35,7 @@ mysql.connect(function(error) {
 
 });
 
-client.bind(APP_UDP_PORT, APP_MAIN_HOST, function() {
+client.bind(APP_MAIN_PORT, APP_MAIN_HOST, function() {
 	console.log('SOCKET', 'Successfully bound udp socket.');
 });
 
@@ -52,6 +53,10 @@ client.on('error', function(error) {
 
 client.on('message', function(message) {
 	console.log('SOCCKET', 'MESSAGE', message.toString());
+});
+
+socket.listen(APP_MAIN_PORT).on('connection', function(client) {
+	console.log('SOCKET.IO', 'Client', client.id, ' has connected');
 });
 
 var httpServer = http.createServer(function(request, response) {
