@@ -59,12 +59,12 @@ var httpServer = http.createServer(function(request, response) {
 	response.end('work in progress');
 }).listen(APP_MAIN_PORT, APP_MAIN_HOST);
 
-var io = socket.listen(8080);
+// var io = socket.listen(8080);
 
-io.on('connection', function(client) {
-	console.log('SOCKET.IO', 'Client', client.id, ' has connected');
-});
+// io.on('connection', function(client) {
+// 	console.log('SOCKET.IO', 'Client', client.id, ' has connected');
+// });
 
-io.on('error', function(err) {
-	console.log('SOCKET.IO', err);
-});
+// io.on('error', function(err) {
+// 	console.log('SOCKET.IO', err);
+// });
