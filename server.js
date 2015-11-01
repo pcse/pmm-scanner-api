@@ -24,6 +24,14 @@ var mysql   = require('mysql').createConnection({
 	database: 'pmm'
 });
 
+var requestRouter = {
+	'/': 'index.html'
+};
+
+var requestDefs = {
+	'index.html': 'FILE'
+}
+
 // establish connection - handle errors if any
 mysql.connect(function(error) {
 
@@ -35,36 +43,28 @@ mysql.connect(function(error) {
 
 });
 
-client.bind(APP_UDP_PORT, APP_MAIN_HOST, function() {
-	console.log('SOCKET', 'Successfully bound udp socket.');
-});
-
-client.on('listening', function() {
-	console.log('SOCKET', 'Now listening for client connections on port', APP_UDP_PORT);
-});
-
-client.on('close', function() {
-	console.log('SOCKET', 'Connection has been closed with client.');
-});
-
-client.on('error', function(error) {
-	console.log('SOCKET', error);
-});
-
-client.on('message', function(message) {
-	console.log('SOCCKET', 'MESSAGE', message.toString());
-});
-
 var httpServer = http.createServer(function(request, response) {
-	response.end('work in progress');
+
+	var routedReq = requestRouter[request.url] || request.url;
+
+	if(requestDefs[routedReq] == 'FILE') {
+		fs.readFile(__dirname + '/' + routedReq, function(err, data) {
+			if(err) {
+				return console.log('HTTP', 'FS', err);
+			}
+
+			response.end(data);
+		});
+	}
+
 }).listen(APP_MAIN_PORT, APP_MAIN_HOST);
 
-// var io = socket.listen(8080);
+var io = socket.listen(httpServer);
 
-// io.on('connection', function(client) {
-// 	console.log('SOCKET.IO', 'Client', client.id, ' has connected');
-// });
+io.on('connection', function(client) {
+	console.log('SOCKET.IO', 'Client', client.id, ' has connected');
+});
 
-// io.on('error', function(err) {
-// 	console.log('SOCKET.IO', err);
-// });
+io.on('error', function(err) {
+	console.log('SOCKET.IO', err);
+});
