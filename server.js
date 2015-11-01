@@ -55,10 +55,10 @@ client.on('message', function(message) {
 	console.log('SOCCKET', 'MESSAGE', message.toString());
 });
 
-socket.listen(APP_MAIN_PORT).on('connection', function(client) {
-	console.log('SOCKET.IO', 'Client', client.id, ' has connected');
-});
+// socket.listen(APP_MAIN_PORT).on('connection', function(client) {
+// 	console.log('SOCKET.IO', 'Client', client.id, ' has connected');
+// });
 
-// var httpServer = http.createServer(function(request, response) {
-// 	response.end('work in progress');
-// }).listen(APP_MAIN_PORT, APP_MAIN_HOST);
+var httpServer = http.createServer(function(request, response) {
+	response.end('work in progress');
+}).listen(APP_MAIN_PORT, APP_MAIN_HOST);
