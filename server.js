@@ -34,7 +34,7 @@ mysql.connect(function(error) {
 
 });
 
-client.bind(APP_UDP_PORT, '0.0.0.0', function() {
+client.bind(APP_UDP_PORT, APP_MAIN_HOST, function() {
 	console.log('SOCKET', 'Successfully bound udp socket.');
 });
 
