@@ -29,7 +29,25 @@ var requestRouter = {
 };
 
 var requestDefs = {
-	'index.html': 'FILE'
+	'index.html': {
+		'type': 'FILE',
+		'mime': 'html'
+	}
+}
+
+var typeDefs = {
+	'css' 	: 'text/css' 				,
+	'html' 	: 'text/html' 				,
+	'ico' 	: 'image/x-icon'			,
+	'jpg' 	: 'image/jpeg'				,
+	'jpeg' 	: 'image/jpeg' 				,
+	'js' 	: 'application/javascript' 	,
+	'map' 	: 'application/x-navimap'	,
+	'pdf' 	: 'application/pdf' 		,
+	'png' 	: 'image/png'				,
+	'ttf'	: 'application/octet-stream',
+	'txt' 	: 'text/plain'				,
+	'woff'	: 'application/x-font-woff'
 }
 
 // establish connection - handle errors if any
@@ -47,12 +65,20 @@ var httpServer = http.createServer(function(request, response) {
 
 	var routedReq = requestRouter[request.url] || request.url;
 
-	if(requestDefs[routedReq] == 'FILE') {
+	if(requestDefs[routedReq] && requestDefs[routedReq].type == 'FILE') {
 		fs.readFile(__dirname + '/' + routedReq, function(err, data) {
 			if(err) {
 				return console.log('HTTP', 'FS', err);
 			}
 
+			var mime = typeDefs[requestDefs[routedReq].mime];
+			if(!mime) {
+				var ext = routedReq.split('.');
+				ext 	= ext[ext.length - 1];
+				mime 	= typeDefs[ext] || typeDefs['txt'];
+			}
+
+			response.writeHead(200, {'Content-Type': mime});
 			response.end(data);
 		});
 	}
