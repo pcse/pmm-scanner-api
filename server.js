@@ -97,7 +97,7 @@ io.on('connection', function(client) {
 	});
 
 	client.on('sync_data', function(data) {
-		console.log('request received to sync ' + data.length + ' entries');
+		console.log('request received to sync ' + data.entries.length + ' entries for event ' + data.eventName);
 	});
 
 });
