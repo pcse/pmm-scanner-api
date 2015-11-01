@@ -34,12 +34,12 @@ mysql.connect(function(error) {
 
 });
 
-client.bind(APP_UDP_PORT, APP_MAIN_HOST, function() {
+client.bind(APP_UDP_PORT, '0.0.0.0', function() {
 	console.log('SOCKET', 'Successfully bound udp socket.');
 });
 
 client.on('listening', function() {
-	console.log('SOCKET', 'Now listening for client connections on port ', APP_UDP_PORT);
+	console.log('SOCKET', 'Now listening for client connections on port', APP_UDP_PORT);
 });
 
 client.on('close', function() {
@@ -51,7 +51,7 @@ client.on('error', function(error) {
 });
 
 client.on('message', function(message) {
-	console.log('SOCCKET', ' MESSAGE', message);
+	console.log('SOCCKET', 'MESSAGE', message.toString());
 });
 
 var httpServer = http.createServer(function(request, response) {
