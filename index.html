@@ -2,8 +2,12 @@
 <head>
 <meta charset="utf-8"/>
 	<title>Test Application</title>
+<script src="/socket.io/socket.io.js"></script>
 </head>
 <body>
-This is a test
+<script>
+var server = io.connect(window.location.href);
+console.log(io);
+</script>
 </body>
 </html>
