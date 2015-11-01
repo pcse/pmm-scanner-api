@@ -40,7 +40,7 @@ client.bind(APP_MAIN_PORT, APP_MAIN_HOST, function() {
 });
 
 client.on('listening', function() {
-	console.log('SOCKET', 'Now listening for client connections on port', APP_UDP_PORT);
+	console.log('SOCKET', 'Now listening for client connections on port', APP_MAIN_PORT);
 });
 
 client.on('close', function() {
@@ -59,6 +59,6 @@ socket.listen(APP_MAIN_PORT).on('connection', function(client) {
 	console.log('SOCKET.IO', 'Client', client.id, ' has connected');
 });
 
-var httpServer = http.createServer(function(request, response) {
-	response.end('work in progress');
-}).listen(APP_MAIN_PORT, APP_MAIN_HOST);
+// var httpServer = http.createServer(function(request, response) {
+// 	response.end('work in progress');
+// }).listen(APP_MAIN_PORT, APP_MAIN_HOST);
