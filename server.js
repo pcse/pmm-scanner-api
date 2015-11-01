@@ -55,8 +55,14 @@ client.on('message', function(message) {
 	console.log('SOCCKET', 'MESSAGE', message.toString());
 });
 
-socket.listen(APP_UDP_PORT).on('connection', function(client) {
+var io = socket.listen(APP_UDP_PORT);
+
+io.on('connection', function(client) {
 	console.log('SOCKET.IO', 'Client', client.id, ' has connected');
+});
+
+io.on('error', function(err) {
+	console.log('SOCKET.IO', err);
 });
 
 var httpServer = http.createServer(function(request, response) {
