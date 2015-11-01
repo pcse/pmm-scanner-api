@@ -85,12 +85,25 @@ var httpServer = http.createServer(function(request, response) {
 
 }).listen(APP_MAIN_PORT, APP_MAIN_HOST);
 
-var io = socket.listen(httpServer);
-
-io.on('connection', function(client) {
-	console.log('SOCKET.IO', 'Client', client.id, ' has connected');
+var client = require('dgram').createSocket('udp4');
+client.bind(8443, APP_MAIN_HOST, function() {
+	console.log('DGRAM', 'UDP socket bound');
 });
 
-io.on('error', function(err) {
-	console.log('SOCKET.IO', err);
+client.on('listening', function() {
+	console.log('DGRAM', 'Listening on port', 8443);
 });
+
+client.on('message', function(message, rinfo) {
+	console.log('DGRAM', message);
+});
+
+// var io = socket.listen(httpServer);
+
+// io.on('connection', function(client) {
+// 	console.log('SOCKET.IO', 'Client', client.id, ' has connected');
+// });
+
+// io.on('error', function(err) {
+// 	console.log('SOCKET.IO', err);
+// });
