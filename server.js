@@ -55,7 +55,11 @@ client.on('message', function(message) {
 	console.log('SOCCKET', 'MESSAGE', message.toString());
 });
 
-var io = socket.listen(APP_UDP_PORT);
+var httpServer = http.createServer(function(request, response) {
+	response.end('work in progress');
+}).listen(APP_MAIN_PORT, APP_MAIN_HOST);
+
+var io = socket.listen(httpServer);
 
 io.on('connection', function(client) {
 	console.log('SOCKET.IO', 'Client', client.id, ' has connected');
@@ -64,7 +68,3 @@ io.on('connection', function(client) {
 io.on('error', function(err) {
 	console.log('SOCKET.IO', err);
 });
-
-var httpServer = http.createServer(function(request, response) {
-	response.end('work in progress');
-}).listen(APP_MAIN_PORT, APP_MAIN_HOST);
