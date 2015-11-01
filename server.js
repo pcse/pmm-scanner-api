@@ -13,8 +13,8 @@ var APP_MAIN_HOST 	= process.env.OPENSHIFT_NODEJS_IP 		|| '0.0.0.0';
 var APP_MAIN_PORT 	= process.env.OPENSHIFT_NODEJS_PORT 	|| 8000;
 var APP_UDP_PORT 	= 8080;
 
+var fs 		= require('fs');
 var socket 	= require('socket.io');
-var client 	= require('dgram').createSocket('udp4');
 var http 	= require('http');
 var mysql   = require('mysql').createConnection({
 	host    : MYSQL_DB_HOST,
