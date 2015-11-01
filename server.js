@@ -95,6 +95,11 @@ io.on('connection', function(client) {
 		console.log('Adding registered student to database');
 		console.log(data);
 	});
+
+	client.on('sync_data', function(data) {
+		console.log('request received to sync ' + data.length + ' entries');
+	});
+
 });
 
 io.on('error', function(err) {
