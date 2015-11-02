@@ -6,7 +6,16 @@
 </head>
 <body>
 <script>
-var server = io.connect('https://pmm-rubyserverapps.rhcloud.com:8443');
+var serverURL = 'https://pmm-rubyserverapps.rhcloud.com:8443';
+if(window.location.hostname == 'localhost') {
+	serverURL = 'http://localhost:7777';
+}
+
+try {
+	var socket = io.connect(serverURL);
+} catch(e) {
+	console.log('Error connecting to server.');
+}
 </script>
 </body>
 </html>
