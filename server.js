@@ -121,6 +121,8 @@ function parseAPIV1Request(request, response, routedReq) {
 		return;
 	}
 
+	response.end("v1");
+
 }
 
 /**
