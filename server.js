@@ -51,10 +51,14 @@ var typeDefs = {
 
 // define env variables
 var eventName 						= null;
-var eventTableCreated 				= false;
+var eventEntryCreated 				= false;
 var databaseSynced 					= false;
-var databaseEntries 				= [];
-var callbacksOnEventTableCreated 	= [];
+var databaseConnected 				= false;
+var databaseEntries 				= {};
+var callbacksOnEventEntryCreated 	= [];
+
+var GLOBAL_DATE_OBJ 				= new Date();
+var GLOBAL_DATE 					= (GLOBAL_DATE_OBJ.getMonth() + 1) + '_' + GLOBAL_DATE_OBJ.getDate() + '_' + GLOBAL_DATE_OBJ.getFullYear();
 
 // establish connection - handle errors if any
 mysql.connect(function(error) {
@@ -63,8 +67,10 @@ mysql.connect(function(error) {
 	    return console.log('MYSQL', error);
 	}
 
+	databaseConnected = true;
+
 	console.log('MYSQL', 'Successfully connected to the mysql server.', 'Setting up database...');
-	initConfigureDatabase();
+	initFetchDatabaseEntries();
 
 });
 
@@ -72,8 +78,9 @@ var httpServer = http.createServer(function(request, response) {
 
 	var routedReq = requestRouter[request.url] || request.url;
 
+	// parse client requests
 	if(requestDefs[routedReq] && requestDefs[routedReq].type == 'FILE') {
-		fs.readFile(__dirname + '/' + routedReq, function(err, data) {
+		return fs.readFile(__dirname + '/' + routedReq, function(err, data) {
 			if(err) {
 				return console.log('HTTP', 'FS', err);
 			}
@@ -90,62 +97,30 @@ var httpServer = http.createServer(function(request, response) {
 		});
 	}
 
+	// assume api request
+	if(routedReq.match(/\/api\/v1\/.*/gi)) {
+		parseAPIV1Request(request, response, routedReq);
+	} else {
+		response.end("Invalid endpoint.");
+	}
+
 }).listen(APP_MAIN_PORT, APP_MAIN_HOST);
 
+
 /**
- * Sets up database (for the first time if needed). Ensures correct
- * tables exist. Creates 'students' and 'events' table
+ * Requires a database connection. Will return an error string
+ * if there is no MySQL connection established.
+ *
+ * @param request 	Object HTTP request object, contains data sent by a client
+ * @param response	Object HTTP response object, used to respond to client's request
+ * @param routedReq String Parsed request URI, contains API endpoint request
  */
-function initConfigureDatabase() {
+function parseAPIV1Request(request, response, routedReq) {
 
-	// create students table
-	mysql.query('CREATE TABLE IF NOT EXISTS `students` (' +
-		
-			'`id` int(11) unsigned NOT NULL AUTO_INCREMENT,'	+
-			'`student_id` varchar(25) DEFAULT NULL,'			+
-			'`last` varchar(25) DEFAULT NULL,'					+
-			'`first` varchar(25) DEFAULT NULL,'					+
-			'`year` varchar(20) DEFAULT NULL,'					+
-			'`major` varchar(30) DEFAULT NULL,'					+
-			'`email` varchar(50) DEFAULT NULL,'					+
-			'`date_added` varchar(25) DEFAULT NULL,'			+
-			'PRIMARY KEY (`id`),'								+
-			'UNIQUE KEY `student_id` (`student_id`)'			+
+	if(!databaseConnected) {
+		return;
+	}
 
-		') ENGINE=InnoDB AUTO_INCREMENT=537 DEFAULT CHARSET=utf8', function(err) {
-
-			if(err) {
-				// if an error occurrs creating table for current event, 
-				return console.log('MYSQL', err);
-			}
-
-			console.log('MYSQL', '`students` table configured. Configuring `events` table...');
-
-			// create events table
-			mysql.query('CREATE TABLE IF NOT EXISTS `events` (' 						+
-
-					'`id` int(11) unsigned NOT NULL AUTO_INCREMENT,' 	+
-					'`table_name` varchar(50) DEFAULT NULL,' 			+
-					'`event_name` varchar(50) DEFAULT NULL,'			+
-					'`total` int(11) DEFAULT NULL,' 					+
-					'`total_new` int(11) DEFAULT NULL,' 				+
-					'PRIMARY KEY (`id`)' 								+
-
-				') ENGINE=InnoDB AUTO_INCREMENT=48 DEFAULT CHARSET=utf8', function(err) {
-
-					if(err) {
-						// if an error occurrs creating table for current event, 
-						return console.log('MYSQL', err);
-					}
-
-					console.log('MYSQL', '`events` table configured.');
-
-					// fetch previous data and populate local database
-					initFetchDatabaseEntries();
-
-				});
-
-		});
 }
 
 /**
@@ -155,16 +130,38 @@ function initConfigureDatabase() {
  */
 function initFetchDatabaseEntries() {
 
+	console.log('MYSQL', 'INFO', 'Fetching stored data from database...');
+
 	mysql.query('SELECT * FROM `students`', function(err, rows, fields) {
 
 		if(err) {
 			return console.log('MYSQL', err);
 		}
 
-		databaseEntries = rows;
+		databaseEntries.students = rows;
 
-		// init socket listener
-		initSocketListener();
+		mysql.query('SELECT * FROM `attendance` WHERE event_id="' + GLOBAL_DATE + '"', function(attErr, attRows, attFields) {
+
+			if(attErr) {
+				return console.log('MYSQL', attErr);
+			}
+
+			databaseEntries.attendance = attRows;
+
+			mysql.query('SELECT * FROM `events`', function(evtErr, evtRows, evtFields) {
+
+				if(evtErr) {
+					return console.log('MYSQL', evtErr);
+				}
+
+				databaseEntries.events = evtRows;
+				
+				// init socket listener
+				initSocketListener();
+
+			});
+
+		});
 
 	});
 }
@@ -176,65 +173,54 @@ function initFetchDatabaseEntries() {
  */
 function initSocketListener() {
 
-	console.log('SERVER', 'Database configured, ' + databaseEntries.length + ' rows found. Listening for connections...');
+	console.log('SERVER', 'Database configured, ' + databaseEntries.students.length + ' rows found. Listening for connections...');
 
 	var io = socket.listen(httpServer).on('connection', function(client) {
 
-		console.log('SOCKET.IO', 'Client', client.id, ' has connected');
+		console.log('SOCKET', 'CONNECTION', 'Client', client.id, ' has connected');
 
-		client.emit('client_Register', {id: client.id});
+		// tell client connection has been established
+		client.emit('connected', {id: client.id});
 
-		client.on('add_registeredstudent', function(data) {
-			console.log('Adding registered student to database');
-			console.log(data);
-		});
-
-		client.on('sync_eventName', function(data) {
+		// we receive basic event information to add to
+		// `events` mysql table
+		client.on('eventmetadata', function(data) {
 
 			// tell console we're creating a table for our event instead of updating the mysql database. hopefully just this once.
-			console.log('MYSQL', 'creating table in mysql database for the current event');
+			console.log('MYSQL', 'SYNC', client.id, 'Adding new event data from client to `events` table');
 
-			eventName = data.eventName;
-			mysql.query('CREATE TABLE IF NOT EXISTS ' + eventName + ' (' +
-					
-						'`id` int(11) unsigned NOT NULL AUTO_INCREMENT,'	+
-						'`student_id` varchar(25) DEFAULT NULL,'			+
-						'`is_new` varchar(2) DEFAULT NULL,'					+
-						'PRIMARY KEY (`id`)'								+
-
-					') ENGINE=InnoDB DEFAULT CHARSET=utf8', function(err) {
+			mysql.query('INSERT IGNORE INTO `events` (table_name, event_name, semester, year) VALUES ("' + data.eventId + '", "' + data.eventId + '", "' + data.semester + '", "' + data.year + '")', function(err) {
 
 				if(err) {
 					// if an error occurrs creating table for current event, 
-					return console.log('MYSQL', 'An error occurred creating a mysql table for the current event -> ' + err);
+					return console.log('MYSQL', 'QUERY', err);
 				}
 
-				eventTableCreated = true;
+				eventEntryCreated = true;
 
-				console.log('ABOUT TO CALL CALLBACKS ', callbacksOnEventTableCreated.length);
-
-				// call all onEventTableCreated callback functions
-				for(var i = 0; i < callbacksOnEventTableCreated.lenght; i++) {
-					callbacksOnEventTableCreated[i].call();
+				// call all onEventEntryCreated callback functions
+				for(var i = 0; i < callbacksOnEventEntryCreated.lenght; i++) {
+					callbacksOnEventEntryCreated[i].call();
 				}
 
 				// reset callbacks
-				callbacksOnEventTableCreated = [];
+				callbacksOnEventEntryCreated = [];
 
 			});
 		});
 
 		// called at beginning of client program. client sends a copy of its local
 		// database. it is matched with remote database, remote database is updated accordingly.
-		client.on('sync_database', function(data) {
+		// consists of student rows, event rows, and attendance rows
+		client.on('eventdata', function(data) {
+			console.log('SERVER', 'SYNC', 'EVENT', 'Syncing database information...');
+			syncDatabases(data);
+		});
 
-			if(eventTableCreated) {
-				syncDatabase(data.entries);
-			} else {
-				callbacksOnEventTableCreated.push(function() {
-					syncDatabase(data.entries);
-				});
-			}
+		/**
+		 * Received when a student registers with the client
+		 */
+		client.on('studentregister', function(data) {
 
 		});
 
@@ -246,41 +232,158 @@ function initSocketListener() {
  * with current entries. Algorithm always prefers passed entries
  * as most recent. Cloud entries WILL be updated with client entries
  */
-function syncDatabase(entries) {
-
-	console.log('MYSQL', 'SYNC', 'Request received to sync ' + entries.length + ' entries for event ' + eventName);
+function syncDatabases(clientEntries) {
 
 	var _time = Date.now();
 	var entriesSynced = 0;
 	var errors = [];
 
-	console.log('MYSQL', 'SYNC', 'Syncing...');
+	if(clientEntries.students) {
 
-	for(var i = 0; i < entries.length; i++) {
+		console.log('SERVER', 'SYNC', 'Comparing remote `students`', databaseEntries.students.length , ':', clientEntries.students.length);
 
-		mysql.query(
+		var diff = [];
 
-			'INSERT INTO `students` (student_id, last, first, year, major, email, date_added) VALUES ' +
-			'("' + entries[i].id + '", "' + entries[i].lname + '", "' + entries[i].fname + '", "' + entries[i].year + '", "' + entries[i].major + '", "' + entries[i].email + '", "' + eventName +'") ' +
-			'ON DUPLICATE KEY ' +
-			'UPDATE last="' + entries[i].lname + '", first="' + entries[i].fname + '", year="' + entries[i].year + '", major="' + entries[i].major + '", email="' + entries[i].email + '"',
-		
-		function(err) {
+		for(var i = 0; i < clientEntries.students.length; i++) {
+			
+			var entryExists = false;
 
-			entriesSynced++;
-
-			if(err) {
-				errors.push(('MYSQL' + ' SYNC ' + err));
+			for(var x = 0; x < databaseEntries.students.length && !entryExists; x++) {
+				if(clientEntries.students[i].id == databaseEntries.students[x].student_id) {
+					entryExists = true;
+				}
 			}
 
-			if(entriesSynced >= entries.length) {
-				_time = Date.now() - _time;
-				console.log('Successfully synced', (entries.length - errors.length), 'entries in ', (_time / 1000), 'seconds');
-				console.log(errors.length + ' errors found' + (errors.lenght ? (' last error: ' + errors[errors.length - 1]) : '.'));
+			// save entry in diff, databaseEntries.students
+			if(!entryExists) {
+				diff.push(clientEntries.students[i]);
+				databaseEntries.students.push({
+					student_id: clientEntries.students[i].id,
+					last: clientEntries.students[i].lname,
+					first: clientEntries.students[i].fname,
+					year: clientEntries.students[i].year,
+					major: clientEntries.students[i].major,
+					email: clientEntries.students[i].email,
+					date_added: GLOBAL_DATE
+				});
 			}
 
-		});
+		}
+
+		if(diff.length) {
+			console.log('SERVER', 'SYNC', 'DIFF', 'Found', diff.length, 'student records missing from remote database. Adding...');
+			for(var i = 0; i < diff.length; i++) {
+				mysql.query('INSERT IGNORE INTO `students` (student_id, last, first, year, major, email, date_added) VALUES ("' + diff[i].id + '", "' + diff[i].lname + '", "' + diff[i].fname + '", "' + diff[i].year + '", "' + diff[i].major + '", "' + diff[i].email + '", "' + GLOBAL_DATE + '")', function(err) {
+					if(err) {
+						return console.log('SERVER', 'SYNC', 'DIFF', 'ERR', err);
+					}
+
+				});
+
+				mysql.query('INSERT IGNORE INTO `students_master` (student_id, last, first, year, major, email, date_added) VALUES ("' + diff[i].id + '", "' + diff[i].lname + '", "' + diff[i].fname + '", "' + diff[i].year + '", "' + diff[i].major + '", "' + diff[i].email + '", "' + GLOBAL_DATE + '")', function(secErr) {
+					if(secErr) {
+						return console.log('SERVER', 'SYNC', 'DIFF', 'secErr', err);
+					}
+
+					console.log('SERVER', 'SYNC', 'DIFF', 'Successfully updated `students` and `students_master` with client data.');
+					updateDatabaseTimestamp();
+
+				});
+			}
+		}
 
 	}
+
+	if(clientEntries.attendance) {
+
+		console.log('SERVER', 'SYNC', 'Comparing remote `attendance`', databaseEntries.attendance.length , ':', clientEntries.attendance.length);
+
+		var diff = [];
+
+		for(var i = 0; i < clientEntries.attendance.length; i++) {
+			
+			var entryExists = false;
+
+			for(var x = 0; x < databaseEntries.attendance.length && !entryExists; x++) {
+				if(clientEntries.attendance[i].student_id == databaseEntries.attendance[x].student_id && clientEntries.attendance[i].event_id == databaseEntries.attendance[x].event_id) {
+					entryExists = true;
+				}
+			}
+
+			// save entry in diff, databaseEntries.attendance
+			if(!entryExists) {
+				diff.push(clientEntries.attendance[i]);
+				databaseEntries.attendance.push(clientEntries.attendance[i]);
+			}
+
+		}
+
+		if(diff.length) {
+			console.log('SERVER', 'SYNC', 'DIFF', 'Found', diff.length, 'attendance records missing from remote database. Adding...');
+			for(var i = 0; i < diff.length; i++) {
+				mysql.query('INSERT INTO `attendance` (student_id, event_id, is_new) VALUES ("' + diff[i].student_id + '", "' + diff[i].event_id + '", "' + diff[i].is_new + '")', function(err) {
+					if(err) {
+						return console.log('SERVER', 'SYNC', 'DIFF', 'ERR', err);
+					}
+
+					console.log('SERVER', 'SYNC', 'DIFF', 'Successfully updated `attendance` with client data.');
+					updateDatabaseTimestamp();
+
+				});
+			}
+		}
+	}
+
+	if(clientEntries.events) {
+
+		console.log('SERVER', 'SYNC', 'Comparing remote `events`', databaseEntries.events.length , 'with', clientEntries.events.length);
+
+		var diff = [];
+
+		for(var i = 0; i < clientEntries.events.length; i++) {
+			
+			var entryExists = false;
+
+			for(var x = 0; x < databaseEntries.events.length && !entryExists; x++) {
+				if(clientEntries.events[i].table_name == databaseEntries.events[x].table_name) {
+					entryExists = true;
+				}
+			}
+
+			if(!entryExists) {
+				diff.push(clientEntries.events[i]);
+				databaseEntries.events.push(clientEntries.events[i]);
+			}
+
+		}
+
+		if(diff.length) {
+			console.log('SERVER', 'SYNC', 'DIFF', 'Found', diff.length, 'event records missing from remote database. Adding...');
+			for(var i = 0; i < diff.length; i++) {
+				mysql.query('INSERT IGNORE INTO `events` (table_name, event_name, semester, year) VALUES ("' + diff[i].table_name + '", "' + diff[i].event_name + '", "' + diff[i].semester + '", "' + diff[i].year + '")', function(err) {
+					if(err) {
+						return console.log('SERVER', 'SYNC', 'DIFF', 'ERR', err);
+					}
+
+					console.log('SERVER', 'SYNC', 'DIFF', 'Successfully updated `events` with client data.');
+					updateDatabaseTimestamp();
+
+				});
+			}
+		}
+	}
+	
+}
+
+function updateDatabaseTimestamp() {
+
+	mysql.query('UPDATE `metadata` SET propValue="' + Date.now() + '" WHERE property="last_updated"', function(err) {
+		if(err) {
+			return console.log('MYSQL', 'TIMESTAMP', 'ERR', err);
+		}
+
+		console.log('MYSQL', 'UPDATE', 'Updated database timestamp.');
+
+	});
 
 }
