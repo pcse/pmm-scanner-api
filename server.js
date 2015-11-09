@@ -14,7 +14,12 @@ var APP_MAIN_PORT 	= process.env.OPENSHIFT_NODEJS_PORT 	|| 7777;
 
 var ERR_NO_MYSQL_CONNECTION 	= "Unable to access the database at this time. Please try again later.";
 var ERR_API_INVALID_ENDPOINT 	= "Invalid endpoint. Check your URL and try again. (/api/v1/key/value)";
-var ERR_API_MISSING_CONTEXT 	= "A context is required. Please edit your request to include (/context/[students|events|attendance])";
+var ERR_API_MISSING_CONTEXT 	= "A valid context is required. Please edit your request to include (/context/[students|events])";
+var ERR_API_DB_ERR 				= "Server error, it's not you, it's me. Please report this to juan.vallejo.12@cnu.edu.";
+
+var ERR_CODE_1_SQL_ERR 				= -1;
+var ERR_CODE_2_SQL_OUTPUT_NOT_JSON 	= -2;
+var ERR_CODE_SQL_DISCONNECTED 		= -3;
 
 var fs 		= require('fs');
 var socket 	= require('socket.io');
@@ -65,18 +70,18 @@ var GLOBAL_DATE_OBJ 				= new Date();
 var GLOBAL_DATE 					= (GLOBAL_DATE_OBJ.getMonth() + 1) + '_' + GLOBAL_DATE_OBJ.getDate() + '_' + GLOBAL_DATE_OBJ.getFullYear();
 
 // establish connection - handle errors if any
-// mysql.connect(function(error) {
+mysql.connect(function(error) {
 
-// 	if(error) {
-// 	    return console.log('MYSQL', error);
-// 	}
+	if(error) {
+	    return console.log('MYSQL', error);
+	}
 
-// 	databaseConnected = true;
+	databaseConnected = true;
 
-// 	console.log('MYSQL', 'Successfully connected to the mysql server.', 'Setting up database...');
-// 	initFetchDatabaseEntries();
+	console.log('MYSQL', 'Successfully connected to the mysql server.', 'Setting up database...');
+	initFetchDatabaseEntries();
 
-// });
+});
 
 var httpServer = http.createServer(function(request, response) {
 
@@ -121,9 +126,9 @@ var httpServer = http.createServer(function(request, response) {
  */
 function parseAPIV1Request(request, response, routedReq) {
 
-	// if(!databaseConnected) {
-		// return respondWithError(response, ERR_NO_MYSQL_CONNECTION);
-	// }
+	if(!databaseConnected) {
+		return respondWithError(response, ERR_NO_MYSQL_CONNECTION, ERR_CODE_SQL_DISCONNECTED);
+	}
 
 	var parsedReq = routedReq.split('/api/v1/');
 	var keyValues = parsedReq[1] ? parsedReq[1].split('/') : null;
@@ -145,7 +150,7 @@ function parseAPIV1Request(request, response, routedReq) {
 	var keyValuePairs = {
 
 		// global fields
-		table: 'students', // database table to select entries from
+		table: 'events', // database table to select entries from
 
 		// student fields
 		student_id: null, // student id
@@ -191,87 +196,33 @@ function parseAPIV1Request(request, response, routedReq) {
 	var mysqlQuery = '';
 
 	// determine which context the api request wants
-	if(keyValuePairs.table == 'students') {
+	if(keyValuePairs.table == 'students' || keyValuePairs.table == 'events') {
 
-		// students is a definitions table, no left join required
-
-		mysqlQuery += 'SELECT * FROM `' + keyValuePairs.table +'`';
-
-		if(keyValuePairs.student_id) {
-			mysqlQuery += ' WHERE student_id="' + keyValuePairs.student_id + '"';
+		// returns results from a "student" context
+		if(keyValuePairs.table == 'students') {
+			mysqlQuery = "SELECT t1.student_id, t3.first, t3.last, t3.major, COUNT(t1.student_id) AS total, COUNT(IF(t1.is_new = 1, 1, NULL)) AS total_new FROM `attendance` AS t1 LEFT JOIN `students` AS t3 ON t1.student_id=t3.student_id LEFT JOIN `events` AS t2 ON t1.event_id=t2.table_name";
 		} else {
-
-			var atLeastOneKey = false;
-
-			if(keyValuePairs.first) {
-				mysqlQuery += ' WHERE first="' + keyValuePairs.first + '"';
-				atLeastOneKey = true;
-			}
-
-			if(keyValuePairs.last) {
-
-				if(atLeastOneKey) {
-					mysqlQuery += ' AND '
-				} else {
-					mysqlQuery += ' WHERE '
-					atLeastOneKey = true;
-				}
-
-				mysqlQuery += 'last="' + keyValuePairs.last + '"';
-			}
-
-			if(keyValuePairs.grad_year) {
-
-				if(atLeastOneKey) {
-					mysqlQuery += ' AND '
-				} else {
-					mysqlQuery += ' WHERE '
-					atLeastOneKey = true;
-				}
-
-				mysqlQuery += 'year="' + keyValuePairs.grad_year + '"';
-
-			}
-
-			if(keyValuePairs.major) {
-
-				if(atLeastOneKey) {
-					mysqlQuery += ' AND '
-				} else {
-					mysqlQuery += ' WHERE '
-					atLeastOneKey = true;
-				}
-
-				mysqlQuery += 'major LIKE "%' + keyValuePairs.major + '%"';
-
-			}
-
-			if(keyValuePairs.email) {
-
-				if(atLeastOneKey) {
-					mysqlQuery += ' AND '
-				} else {
-					mysqlQuery += ' WHERE '
-					atLeastOneKey = true;
-				}
-
-				mysqlQuery += 'email="' + keyValuePairs.email + '"';
-
-			}
-
+			mysqlQuery = "SELECT t1.event_id, t2.event_name, t2.semester, t2.year, COUNT(t1.student_id) AS total, COUNT(IF(t1.is_new = 1, 1, NULL)) AS total_new FROM `attendance` AS t1 LEFT JOIN `students` AS t3 ON t1.student_id=t3.student_id LEFT JOIN `events` AS t2 ON t1.event_id=t2.table_name";
 		}
-
-	// combines all combinations for all tables
-	} else if(keyValuePairs.table == 'attendance') {
-
-		mysqlQuery = "SELECT t1.event_id, t2.event_name, t2.semester, t2.year, COUNT(t1.student_id) AS total, COUNT(IF(t1.is_new = 1, 1, NULL)) AS total_new FROM `attendance` AS t1 LEFT JOIN `students` AS t3 ON t1.student_id=t3.student_id LEFT JOIN `events` AS t2 ON t1.event_id=t2.table_name";
 
 		var atLeastOneKey = false;
 
-		// using student data
+		// handle student parameters
 		if(keyValuePairs.student_id) {
-			mysqlQuery += " WHERE t1.student_id='" + keyValuePairs.student_id + "'";
+			mysqlQuery += ' WHERE t1.student_id="' + keyValuePairs.student_id + '"';
 			atLeastOneKey = true;
+		}
+			
+		if(keyValuePairs.first) {
+
+			if(atLeastOneKey) {
+				mysqlQuery += ' AND '
+			} else {
+				mysqlQuery += ' WHERE '
+				atLeastOneKey = true;
+			}
+
+			mysqlQuery += 't3.first="' + keyValuePairs.first + '"';
 		}
 
 		if(keyValuePairs.last) {
@@ -286,18 +237,6 @@ function parseAPIV1Request(request, response, routedReq) {
 			mysqlQuery += 't3.last="' + keyValuePairs.last + '"';
 		}
 
-		if(keyValuePairs.first) {
-
-			if(atLeastOneKey) {
-				mysqlQuery += ' AND '
-			} else {
-				mysqlQuery += ' WHERE '
-				atLeastOneKey = true;
-			}
-
-			mysqlQuery += 't3.first="' + keyValuePairs.first + '"';
-		}
-
 		if(keyValuePairs.grad_year) {
 
 			if(atLeastOneKey) {
@@ -308,6 +247,7 @@ function parseAPIV1Request(request, response, routedReq) {
 			}
 
 			mysqlQuery += 't3.year="' + keyValuePairs.grad_year + '"';
+
 		}
 
 		if(keyValuePairs.major) {
@@ -319,7 +259,8 @@ function parseAPIV1Request(request, response, routedReq) {
 				atLeastOneKey = true;
 			}
 
-			mysqlQuery += 't3.major="' + keyValuePairs.major + '"';
+			mysqlQuery += 't3.major LIKE "%' + keyValuePairs.major + '%"';
+
 		}
 
 		if(keyValuePairs.email) {
@@ -331,10 +272,11 @@ function parseAPIV1Request(request, response, routedReq) {
 				atLeastOneKey = true;
 			}
 
-			mysqlQuery += 't3.email="' + keyValuePairs.email + '"';
+			mysqlQuery += 't2.email="' + keyValuePairs.email + '"';
+
 		}
 
-		// using event data
+		// handle event parameters
 		if(keyValuePairs.event_id) {
 
 			if(atLeastOneKey) {
@@ -344,10 +286,24 @@ function parseAPIV1Request(request, response, routedReq) {
 				atLeastOneKey = true;
 			}
 
-			mysqlQuery += 't1.event_id="' + keyValuePairs.event_id + '"';
+			mysqlQuery += 't2.table_name="' + keyValuePairs.event_name + '"';
+
 		}
 
-		if(keyValuePairs.semester) { ////**
+		if(keyValuePairs.event_name) {
+
+			if(atLeastOneKey) {
+				mysqlQuery += ' AND '
+			} else {
+				mysqlQuery += ' WHERE '
+				atLeastOneKey = true;
+			}
+
+			mysqlQuery += 't2.event_name LIKE "%' + keyValuePairs.event_name + '%"';
+
+		}
+
+		if(keyValuePairs.semester) {
 
 			if(atLeastOneKey) {
 				mysqlQuery += ' AND '
@@ -373,102 +329,47 @@ function parseAPIV1Request(request, response, routedReq) {
 
 		}
 
-		if(keyValuePairs.event_name) {
-
-			if(atLeastOneKey) {
-				mysqlQuery += ' AND '
-			} else {
-				mysqlQuery += ' WHERE '
-				atLeastOneKey = true;
-			}
-
-			mysqlQuery += 't2.event_name LIKE "%' + keyValuePairs.event_name + '%"';
-
-		}
-
-		mysqlQuery += " GROUP BY t1.event_id";
-
-	} else if(keyValuePairs.table == 'events') {
-
-		// events is a definitions table, no left join required
-
-		if(keyValuePairs.event_id) {
-			mysqlQuery = "SELECT t1.table_name AS eventid, t1.event_name AS eventname, t1.semester, t1.year, COUNT(*) AS total FROM `events` AS t1 LEFT JOIN `attendance` AS t2 ON t1.table_name=t2.event_id WHERE t2.event_id='" + keyValuePairs.event_id + "'";
+		if(keyValuePairs.table == 'students') {
+			mysqlQuery += " GROUP BY t1.student_id";
 		} else {
-
-			mysqlQuery = "SELECT t1.event_id, t2.event_name, t2.semester, t2.year, COUNT(t1.student_id) AS total, COUNT(IF(t1.is_new = 1, 1, NULL)) AS total_new FROM `attendance` AS t1 LEFT JOIN `events` AS t2 ON t1.event_id=t2.table_name";
-
-			var atLeastOneKey = false;
-
-			if(keyValuePairs.event_name) {
-				mysqlQuery += ' WHERE t2.event_name LIKE "%' + keyValuePairs.event_name + '%"';
-				atLeastOneKey = true;
-			}
-
-			if(keyValuePairs.semester) {
-
-				if(atLeastOneKey) {
-					mysqlQuery += ' AND '
-				} else {
-					mysqlQuery += ' WHERE '
-					atLeastOneKey = true;
-				}
-
-				mysqlQuery += 'semester="' + keyValuePairs.semester + '"';
-
-			}
-
-			if(keyValuePairs.year) {
-
-				if(atLeastOneKey) {
-					mysqlQuery += ' AND '
-				} else {
-					mysqlQuery += ' WHERE '
-					atLeastOneKey = true;
-				}
-
-				mysqlQuery += 'year="' + keyValuePairs.year + '"';
-
-			}
-
 			mysqlQuery += " GROUP BY t1.event_id";
-
 		}
 
 	} else {
 		return respondWithError(response, ERR_API_MISSING_CONTEXT);
 	}
 
-	console.log(mysqlQuery);
+	mysql.query(mysqlQuery, function(err, rows) {
 
-	// mysql.query('SELECT * FROM `attendance` WHERE ' + keyValueQuery, function(err, rows) {
+		if(err) {
+			console.log('MYSQL', 'QUERY', 'ERR', err);
+			console.log('MYSQL', 'QUERY', 'DUMP', mysqlQuery);
+			return respondWithError(response, ERR_API_DB_ERR, ERR_CODE_1_SQL_ERR);
+		}
 
-	// 	if(err) {
-	// 		return respondWithError(response, ERR_API_DB_ERR);
-	// 	}
+		try {
+			response.end(JSON.stringify(rows));
+		} catch(e) {
+			respondWithError(response, ERR_API_DB_ERR, ERR_CODE_2_SQL_OUTPUT_NOT_JSON);
+		}
 
-	// });
-
-	response.end(routedReq);
+	});
 
 }
 
 /**
  * Responds an http request with a specified error
  */
-function respondWithError(response, error, httpCode) {
+function respondWithError(response, error, errorCode) {
 
 	var errObj = {
 		error: true,
-		message: error
+		message: error,
+		code: errorCode
 	}
 
-	response.writeHead(httpCode || 500);
+	response.writeHead(errorCode || 500);
 	response.end(JSON.stringify(errObj));
-
-}
-
-function respondWithResults() {
 
 }
 
