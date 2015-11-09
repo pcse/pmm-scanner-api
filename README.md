@@ -49,6 +49,12 @@ There are three different types of **contexts**
 
 By default, the **students** context is chosen, if no context is specified in the *URL*. 
 
+A **students** context returns a set of data with one or more items. Each item in the set contains information specific to a student, such as their name, student id, when they were added to the database, or what their major is. (These fields, as well as the ones returned for other contexts will be discussed in better detail further in the guide).
+
+An **events** context returns a set of data with one or more items. Each item in the set is a Pizza My Mind "Event".  much like discussed in the previous context, items contain information specific only to the event they represent. This includes a particular event's semester, year in which it occurred, the name of the company that hosted the event, the total number of students that attended, and the total number of students that attended but had no previous record of registering at a Pizza My Mind event.
+
+An **attendance** context behaves a bit different from previously discussed contexts. Attendance records *are event-based* and can be requested for a specific student, for a specific student at a specific event, for a specific event, for a set of events occurring in a specific year or semester (or both), for a student attending an event that occurred in a specific year and /or semester, etc. Because attendance requests can be a bit ambiguous, results are always returned in a set (as an array of objects), but the contents of such objects differ each time. Please refer to the *Contexts - attendance* section for a more detailed breakdown of this endpoint.
+
 **Parameters** specific to each context will be discussed in subsections that follow. Please **Note** that any parameters specified to a context that are not supported by it will simply be ignored.
 
 **Please note** that the order in which any key-value pairs are specified does not matter. A request such as:
@@ -75,7 +81,9 @@ would be equally valid if specified as:
 "gradyear": "2019",
 "major": "Underwater Basket Weaving",
 "email": "FirstName.LastName@cnu.edu",
-"since": "8_25_2014"
+"since": "8_25_2014",
+"total_events": 9,
+"total_events_current_semester": 14
 }]
 ```
 
@@ -157,6 +165,36 @@ And a *summer* event covers the months *June* and *July*.
 - **year** 				Search events by year
 
 **Note** (Estimated) fields mean that their value can be an ambiguous string. Because of this, entries most closely matching the value entered will be returned.
+
+####Contexts - attendance
+
+**Response** The server will return a response with mime type *text/plain*. The response format, however, will be an *array* of objects in [**JSON** format](http://www.json.org/). The response fields *total* and *total_new* will always refer to the amount of students found at that event given any supported parameters.
+
+```JSON
+[{
+"event_id": "11_5_2015",
+"event_name": "Dominion Power",
+"semester": "Fall",
+"year": "2015",
+"total": "126",
+"total_new": "3"
+}]
+```
+
+**Mix and match** Unlike other *contexts*, all parameters are supported in an *attendance context*. However, the records returned are *general* and do not contain references to any other records. For example, an attendance response containing all events where students with the last name *Smith* attended will not include an array of all students with the last name *Smith* that actually attended each particular event. An example of such query is shown below:
+
+```
+http://mind.cnuapps.me/api/v1/context/attendance/last/smith
+```
+
+An **attendance** context behaves a bit different from previously discussed contexts. Attendance records can be requested for a specific student, for a specific student at a specific event, for a specific event, for a set of events occurring in a specific year or semester (or both), for a student attending an event that occurred in a specific year and /or semester, etc. Because attendance requests can be a bit ambiguous, results are always returned in a set (as an array of objects), but the contents of such objects differ each time. Please refer to the *Contexts - attendance* section for a more detailed breakdown of this endpoint.
+
+- [+] give all events where student w/ id, name, email attended
+- [-] give all students that attended a specific event
+- which students attended which event
+- [+] Which events a student attended
+- Which students attended an event
+- It is possible to obtain a list of events for a student, but not a list of students for an event
 
 ###Notes
 

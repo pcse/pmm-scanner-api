@@ -261,19 +261,142 @@ function parseAPIV1Request(request, response, routedReq) {
 
 		}
 
+	// combines all combinations for all tables
 	} else if(keyValuePairs.table == 'attendance') {
 
-		
+		mysqlQuery = "SELECT t1.event_id, t2.event_name, t2.semester, t2.year, COUNT(t1.student_id) AS total, COUNT(IF(t1.is_new = 1, 1, NULL)) AS total_new FROM `attendance` AS t1 LEFT JOIN `students` AS t3 ON t1.student_id=t3.student_id LEFT JOIN `events` AS t2 ON t1.event_id=t2.table_name";
+
+		var atLeastOneKey = false;
+
+		// using student data
+		if(keyValuePairs.student_id) {
+			mysqlQuery += " WHERE t1.student_id='" + keyValuePairs.student_id + "'";
+			atLeastOneKey = true;
+		}
+
+		if(keyValuePairs.last) {
+
+			if(atLeastOneKey) {
+				mysqlQuery += ' AND '
+			} else {
+				mysqlQuery += ' WHERE '
+				atLeastOneKey = true;
+			}
+
+			mysqlQuery += 't3.last="' + keyValuePairs.last + '"';
+		}
+
+		if(keyValuePairs.first) {
+
+			if(atLeastOneKey) {
+				mysqlQuery += ' AND '
+			} else {
+				mysqlQuery += ' WHERE '
+				atLeastOneKey = true;
+			}
+
+			mysqlQuery += 't3.first="' + keyValuePairs.first + '"';
+		}
+
+		if(keyValuePairs.grad_year) {
+
+			if(atLeastOneKey) {
+				mysqlQuery += ' AND '
+			} else {
+				mysqlQuery += ' WHERE '
+				atLeastOneKey = true;
+			}
+
+			mysqlQuery += 't3.year="' + keyValuePairs.grad_year + '"';
+		}
+
+		if(keyValuePairs.major) {
+
+			if(atLeastOneKey) {
+				mysqlQuery += ' AND '
+			} else {
+				mysqlQuery += ' WHERE '
+				atLeastOneKey = true;
+			}
+
+			mysqlQuery += 't3.major="' + keyValuePairs.major + '"';
+		}
+
+		if(keyValuePairs.email) {
+
+			if(atLeastOneKey) {
+				mysqlQuery += ' AND '
+			} else {
+				mysqlQuery += ' WHERE '
+				atLeastOneKey = true;
+			}
+
+			mysqlQuery += 't3.email="' + keyValuePairs.email + '"';
+		}
+
+		// using event data
+		if(keyValuePairs.event_id) {
+
+			if(atLeastOneKey) {
+				mysqlQuery += ' AND '
+			} else {
+				mysqlQuery += ' WHERE '
+				atLeastOneKey = true;
+			}
+
+			mysqlQuery += 't1.event_id="' + keyValuePairs.event_id + '"';
+		}
+
+		if(keyValuePairs.semester) { ////**
+
+			if(atLeastOneKey) {
+				mysqlQuery += ' AND '
+			} else {
+				mysqlQuery += ' WHERE '
+				atLeastOneKey = true;
+			}
+
+			mysqlQuery += 't2.semester="' + keyValuePairs.semester + '"';
+
+		}
+
+		if(keyValuePairs.year) {
+
+			if(atLeastOneKey) {
+				mysqlQuery += ' AND '
+			} else {
+				mysqlQuery += ' WHERE '
+				atLeastOneKey = true;
+			}
+
+			mysqlQuery += 't2.year="' + keyValuePairs.year + '"';
+
+		}
+
+		if(keyValuePairs.event_name) {
+
+			if(atLeastOneKey) {
+				mysqlQuery += ' AND '
+			} else {
+				mysqlQuery += ' WHERE '
+				atLeastOneKey = true;
+			}
+
+			mysqlQuery += 't2.event_name LIKE "%' + keyValuePairs.event_name + '%"';
+
+		}
+
+		mysqlQuery += " GROUP BY t1.event_id";
 
 	} else if(keyValuePairs.table == 'events') {
 
 		// events is a definitions table, no left join required
 
 		if(keyValuePairs.event_id) {
-			mysqlQuery = "SELECT t1.table_name AS eventid, t1.event_name AS eventname, t1.semester, t1.year, COUNT(*) AS total FROM `events` AS t1 LEFT JOIN `attendance` AS t2 ON t1.table_name=t2.event_id WHERE t2.event_id='" + keyValuePairs.event_id +"'";
+			mysqlQuery = "SELECT t1.table_name AS eventid, t1.event_name AS eventname, t1.semester, t1.year, COUNT(*) AS total FROM `events` AS t1 LEFT JOIN `attendance` AS t2 ON t1.table_name=t2.event_id WHERE t2.event_id='" + keyValuePairs.event_id + "'";
 		} else {
 
-			mysqlQuery = "SELECT t1.event_id, t2.event_name, t2.semester, t2.year, COUNT(t1.event_id) AS total, COUNT(IF(t1.is_new = 1, 1, NULL)) AS total_new FROM `attendance` AS t1 LEFT JOIN `events` AS t2 ON t1.event_id=t2.table_name";
+			mysqlQuery = "SELECT t1.event_id, t2.event_name, t2.semester, t2.year, COUNT(t1.student_id) AS total, COUNT(IF(t1.is_new = 1, 1, NULL)) AS total_new FROM `attendance` AS t1 LEFT JOIN `events` AS t2 ON t1.event_id=t2.table_name";
 
 			var atLeastOneKey = false;
 
