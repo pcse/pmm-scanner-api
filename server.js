@@ -73,7 +73,8 @@ var GLOBAL_DATE 					= (GLOBAL_DATE_OBJ.getMonth() + 1) + '_' + GLOBAL_DATE_OBJ.
 mysql.connect(function(error) {
 
 	if(error) {
-	    return console.log('MYSQL', error);
+	    console.log('FATAL', 'MYSQL', 'CONNECTION', error);
+	    return process.exit(1);
 	}
 
 	databaseConnected = true;

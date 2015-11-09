@@ -12,6 +12,7 @@ API Documentation
 		- Event identifiers
 		- Events by semester / year
 			- Supported semester parameter values
+	- Contexts - general
 - **Parameters**
 - **Notes**
 
@@ -37,12 +38,13 @@ http://mind.cnuapps.me/api/v1/id/0055555
 
 ###Contexts
 
-API consists of two different `contexts`. Contexts can be thought of as modes for your data output.
+API consists of three different `contexts`. Contexts can be thought of as modes for your data output.
 
-There are two different types of **contexts**
+There are three different types of **contexts**
 
 - `students`
 - `events`
+- `general`
 
 A **students** context returns a set of data with one or more items. Data is based on students, meaning that output will consist solely of student information. For example, a request with this context with parameters consisting of a *last name* of *Smith* and an *event name* of *Dominion Power* will yield *n* amount of results, where *n* is the number of students with a *last name* of *Smith* that happened to attend an event hosted by *Dominion Power*. An example of this request is shown below:
 
@@ -54,6 +56,12 @@ An **events** context returns a set of data with one or more items. Output is ba
 
 ```
 http://mind.cnuapps.me/api/v1/context/events/last/smith/major/computer
+```
+
+A **general** context is a bit different from the previously discussed ones. The main difference with a *general* context is that data is returned as a *many to many* relationship between *events* and *students*. A *general* context does not group data sets by unique identifiers (student ID, event ID, etc). This means that a data set returned may have several items with the same event information for each student that attended it, or several  items with the same student information for every event that the particular student attended. This context returns all of the fields that both an *events* context and a *students* context would return. The example below queries for all events attended by every students in the database:
+
+```
+http://mind.cnuapps.me/api/v1/context/general
 ```
 
 By default, the **events** context is assumed, if no context is specified in the *URL*. 
@@ -158,7 +166,7 @@ And a *summer* event covers the months *June* and *July*.
 
 URL parameters can be mixed and matched in any order. Below is a breakdown of each one. *Note* that context does not matter for the type of parameters you can use:
 
-**Supported API URL keywords** are listed below:
+**Supported API URL parameters** are listed below:
 
 - **email** 			A student's CNU email
 - **first** 			A student's first name
@@ -173,6 +181,14 @@ URL parameters can be mixed and matched in any order. Below is a breakdown of ea
 - **year** 			Year an event occurred
 
 **Note** (Estimated) fields mean that their value can be an ambiguous string. Because of this, entries most closely matching the value entered will be returned. This means either part of the value or all of the value may be specified.
+
+**To simply obtain all event or student data** Simply specify the desired *context* with no extra filter parameters. An example requesting all event records is shown below:
+
+```
+http://mind.cnuapps.me/api/v1/context/events
+```
+
+*Simply* replace *events* with *students* for a similar result with all student records.
 
 ###Notes
 
