@@ -51,19 +51,31 @@ By default, the **students** context is chosen, if no context is specified in th
 
 **Parameters** specific to each context will be discussed in subsections that follow. Please **Note** that any parameters specified to a context that are not supported by it will simply be ignored.
 
+**Please note** that the order in which any key-value pairs are specified does not matter. A request such as:
+
+```
+/context/students/major/philosophy/year/2016
+```
+
+would be equally valid if specified as:
+
+```
+/year/2016/major/philosophy/context/students
+```
+
 ####Contexts - students
 
 **Response** The server will return a response with mime type *text/plain*. The response format, however, will be an array of objects in [**JSON** format](http://www.json.org/).
 
 ```JSON
 [{
-id: 00555555,
-last: 'LastName',
-first: 'FirstName',
-gradyear: '2019',
-major: 'Underwater Basket Weaving',
-email: 'FirstName.LastName@cnu.edu',
-since: '8_25_2014'
+'id': '00555555',
+'last': 'LastName',
+'first': 'FirstName',
+'gradyear': '2019',
+'major': 'Underwater Basket Weaving',
+'email': 'FirstName.LastName@cnu.edu',
+'since': '8_25_2014'
 }]
 ```
 
@@ -92,12 +104,12 @@ The example above would return all student records matching  a first name of "aa
 
 ```JSON
 [{
-event_id: 11_5_2015,
-event_name: 'Dominion Power',
-semester: 'Fall',
-year: '2015',
-total: 126,
-total_new: 3
+'event_id': '11_5_2015',
+'event_name': 'Dominion Power',
+'semester': 'Fall',
+'year': '2015',
+'total': '126',
+'total_new': '3'
 }]
 ```
 
