@@ -69,13 +69,13 @@ would be equally valid if specified as:
 
 ```JSON
 [{
-'id': '00555555',
-'last': 'LastName',
-'first': 'FirstName',
-'gradyear': '2019',
-'major': 'Underwater Basket Weaving',
-'email': 'FirstName.LastName@cnu.edu',
-'since': '8_25_2014'
+"id": "00555555",
+"last": "LastName",
+"first": "FirstName",
+"gradyear": "2019",
+"major": "Underwater Basket Weaving",
+"email": "FirstName.LastName@cnu.edu",
+"since": "8_25_2014"
 }]
 ```
 
@@ -104,12 +104,12 @@ The example above would return all student records matching  a first name of "aa
 
 ```JSON
 [{
-'event_id': '11_5_2015',
-'event_name': 'Dominion Power',
-'semester': 'Fall',
-'year': '2015',
-'total': '126',
-'total_new': '3'
+"event_id": "11_5_2015",
+"event_name": "Dominion Power",
+"semester": "Fall",
+"year": "2015",
+"total": "126",
+"total_new": "3"
 }]
 ```
 
