@@ -46,13 +46,13 @@ There are three different types of **contexts**
 - `events`
 - `general`
 
-A **students** context returns a set of data with one or more items. Data is based on students, meaning that output will consist solely of student information. For example, a request with this context with parameters consisting of a *last name* of *Smith* and an *event name* of *Dominion Power* will yield *n* amount of results, where *n* is the number of students with a *last name* of *Smith* that happened to attend an event hosted by *Dominion Power*. An example of this request is shown below:
+A **students** context returns a set of data with one or more items in a *many students to one event* relationship. Data is based on students, meaning that output will consist solely of student information. For example, a request with this context with parameters consisting of a *last name* of *Smith* and an *event name* of *Dominion Power* will yield *n* amount of results, where *n* is the number of students with a *last name* of *Smith* that happened to attend an event hosted by *Dominion Power*. An example of this request is shown below:
 
 ```
 http://mind.cnuapps.me/api/v1/context/students/last/smith/eventname/dominion
 ```
 
-An **events** context returns a set of data with one or more items. Output is based on event information, meaning that a request with this context, containing parameters consisting of   a *student major* of *Computer Science* and a *last name* of *Smith* will return all events where students with a last name of *Smith* and a major in *Computer Science* attended. An example of this request is shown below:
+An **events** context returns a set of data with one or more items in a *many events to one students* relationship. Output is based on event information, meaning that a request with this context, containing parameters consisting of   a *student major* of *Computer Science* and a *last name* of *Smith* will return all events where students with a last name of *Smith* and a major in *Computer Science* attended. An example of this request is shown below:
 
 ```
 http://mind.cnuapps.me/api/v1/context/events/last/smith/major/computer
@@ -162,9 +162,25 @@ A *spring* event covers the months from *January* until *May*.
 
 And a *summer* event covers the months *June* and *July*.
 
+####Contexts - general
+
+**Response** The server will return a response with mime type *text/plain*. The response format, however, will be an *array* of objects in [**JSON** format](http://www.json.org/).
+
+```JSON
+[{"event_id":"10_1_2015","event_name":"Lockheed Martin","semester":"fall","year":"2015","id":"00555555","first":"firstName","last":"lastName","major":"Computer Science","email":"firstName.lastName@cnu.edu","since":"8_25_15"}]
+```
+
+**Relationship** Because this context is a *many to many* relationship between *events* and *students*, every response will contain fields from both an *events* context and *student* context. Responses may contain objects sharing exact information for events, or students, or both, depending on the type of parameters passed. Below is an example of a request for all events where students with the last name *Anderson* attended:
+
+```
+http://mind.cnuapps.me/api/v1/context/general/last/anderson
+```
+
+Both event data and student data will repeat across multiple items returned, as more than one student with a last name of *Anderson* attended more than one event.
+
 ###Parameters
 
-URL parameters can be mixed and matched in any order. Below is a breakdown of each one. *Note* that context does not matter for the type of parameters you can use:
+URL parameters are *not case sensitive* and can be mixed and matched in any order. Below is a breakdown of each one. *Note* that context does not matter for the type of parameters you can use:
 
 **Supported API URL parameters** are listed below:
 

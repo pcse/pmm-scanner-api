@@ -168,17 +168,9 @@ function parseAPIV1Request(request, response, routedReq) {
 		year: null // 2015
 	};
 
-	var keyValueQuery = "";
-
 	// parse through key-value pairs
 	for(var i = 0; i < keyValues.length; i+=2) {
-		keyValuePairs[(queryRoutes[keyValues[i]] || keyValues[i])] = keyValues[i + 1];
-		keyValueQuery += (queryRoutes[keyValues[i]] || keyValues[i]) + "='" + keyValues[i + 1] + "',";
-	}
-
-	// strip commas
-	if(keyValueQuery[keyValueQuery.length - 1] == ',') {
-		keyValueQuery = keyValueQuery.substring(0, keyValueQuery.length - 1);
+		keyValuePairs[(queryRoutes[keyValues[i].toLowerCase()] || keyValues[i].toLowerCase())] = keyValues[i + 1];
 	}
 
 	// format selection values that may contain spaces or special characters
@@ -342,7 +334,7 @@ function parseAPIV1Request(request, response, routedReq) {
 
 		if(keyValuePairs.table == 'students') {
 			mysqlQuery += " GROUP BY t1.student_id";
-		} else if(keyValuePairs == 'events') {
+		} else if(keyValuePairs.table == 'events') {
 			mysqlQuery += " GROUP BY t1.event_id";
 		}
 
