@@ -98,6 +98,20 @@ would be equally valid if specified as:
 }]
 ```
 
+**Response Fields**
+
+These are fields (or keys) found in each item returned:
+
+- **email** 		A student's CNU email
+- **first** 			A student's first name
+- **gradyear** 	A student's graduating year
+- **id** 			A student's CNU ID
+- **last** 			A student's last name
+- **major** 		A student's current major
+- **since** 		Date when student was added to database
+- **total** 		Total # of events student has attended
+- **total_new** 	Total # of events where student had to register (ideally this number would always be 1 if database integrity had persisted since it was created)
+
 **Search** A student *ID* is not required to fetch student records, however, it is the most direct way of obtaining a particular student's data. To search records based on a student's first or last name, simply specify those values as part of the request:
 
 ```
@@ -121,6 +135,17 @@ The example above would return all student records matching  a first name of Aar
 }]
 ```
 
+**Response Fields**
+
+These are fields (or keys) found in each item returned:
+
+- **event_id** 		An event's identifier
+- **event_name** 	Name of host company for this event
+- **semester** 		Semester in which this event occurred
+- **year** 			Year in which this event occurred
+- **total** 			Total # of students at this event
+- **total_new** 		Total # of students not previously in the database at this event
+
 **Identifiers** Events have a unique identifier, or ID, based on the exact date in which they occurred. They are in the form of **month**\_**day**\_**fullYear**. An example is shown below for an event having occurred on the *25th of December, 2014*:
 
 ```
@@ -141,7 +166,8 @@ http://mind.cnuapps.me/api/v1/context/events/eventname/lockheed%20martin/eventid
 
 The above example would yield the result below:
 
-```
+```JSON
+[{"event_id":"10_1_2015","event_name":"Lockheed Martin","semester":"fall","year":"2015","total":135,"total_new":7}]
 ```
 
 Note that you can expand your query even further by specifying an event year, and semester in which it occurred. This is useful if you are searching for an event in particular but do not know its name or identifier:
