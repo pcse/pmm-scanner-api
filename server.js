@@ -286,7 +286,7 @@ function parseAPIV1Request(request, response, routedReq) {
 				atLeastOneKey = true;
 			}
 
-			mysqlQuery += 't2.table_name="' + keyValuePairs.event_name + '"';
+			mysqlQuery += 't2.table_name="' + keyValuePairs.event_id + '"';
 
 		}
 
@@ -338,7 +338,7 @@ function parseAPIV1Request(request, response, routedReq) {
 	} else {
 		return respondWithError(response, ERR_API_MISSING_CONTEXT);
 	}
-
+console.log(mysqlQuery);
 	mysql.query(mysqlQuery, function(err, rows) {
 
 		if(err) {
