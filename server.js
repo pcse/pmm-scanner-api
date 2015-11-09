@@ -185,6 +185,14 @@ function parseAPIV1Request(request, response, routedReq) {
 		keyValuePairs.event_name = decodeURIComponent(keyValuePairs.event_name);
 	}
 
+	if(keyValuePairs.first) {
+		keyValuePairs.first = decodeURIComponent(keyValuePairs.first);
+	}
+
+	if(keyValuePairs.last) {
+		keyValuePairs.last = decodeURIComponent(keyValuePairs.last);
+	}
+
 	if(keyValuePairs.year) {
 		keyValuePairs.year = decodeURIComponent(keyValuePairs.year);
 	}
