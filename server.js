@@ -280,7 +280,7 @@ function parseAPIV1Request(request, response, routedReq) {
 				atLeastOneKey = true;
 			}
 
-			mysqlQuery += 't2.email="' + keyValuePairs.email + '"';
+			mysqlQuery += 't3.email="' + keyValuePairs.email + '"';
 
 		}
 
