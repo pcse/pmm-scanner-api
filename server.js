@@ -470,8 +470,8 @@ function initSocketListener() {
 		/**
 		 * Received when a student registers with the client
 		 */
-		client.on('studentregister', function(data) {
-
+		client.on('disconnect', function(data) {
+			console.log('SERVER', 'DISCONNECT', 'Client', client.id, 'has disconnected.');
 		});
 
 	});
