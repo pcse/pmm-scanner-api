@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8"/>
+</head>
+<body>
+<h1 id="apidocumentation">API Documentation</h1>
+
+<h3 id="tableofcontents">Table of Contents</h3>
+
+<ul>
+<li><strong>Introduction</strong>
+
+<ul>
+<li>API endpoint and format</li>
+</ul></li>
+<li><strong>Contexts</strong>
+
+<ul>
+<li>Contexts - students
+
+<ul>
+<li>Using parameters to search</li>
+<li>Supported student parameters</li>
+</ul></li>
+<li>Contexts - events
+
+<ul>
+<li>Event identifiers</li>
+<li>Events by semester / year
+
+<ul>
+<li>Supported semester parameters</li>
+</ul></li>
+<li>Supported Event parameters</li>
+</ul></li>
+<li>Contexts - attendance</li>
+</ul></li>
+<li><strong>Notes</strong></li>
+</ul>
+
+<h3 id="introduction">Introduction</h3>
+
+<p>Using the API consists of a standard <strong>GET</strong> request to a dedicated endpoint that handles client requests specific to the API. This endpoint is shown below. Any request made to the API should begin with the following format:</p>
+
+<pre><code>http://mind.cnuapps.me/api/v1/
+</code></pre>
+
+<p>An API request is formatted with slashes, requesting data in the form of &quot;key-value&quot; pairs. Only keys that are supported by the current API version may be used. An example is shown below:</p>
+
+<pre><code>/id/00555555
+</code></pre>
+
+<p>The request above, would return all stored data for a student with a student ID of <em>00555555</em>. Below is an example of the above request showing the full format, including the API endpoint:</p>
+
+<pre><code>http://mind.cnuapps.me/api/v1/id/0055555
+</code></pre>
+
+<h3 id="contexts">Contexts</h3>
+
+<p>API consists of three different <code>contexts</code>. Contexts can be thought of as categories, or modes.</p>
+
+<p>There are three different types of <strong>contexts</strong></p>
+
+<ul>
+<li><code>students</code></li>
+<li><code>events</code></li>
+<li><code>attendance</code></li>
+</ul>
+
+<p>By default, the <strong>students</strong> context is chosen, if no context is specified in the <em>URL</em>. </p>
+
+<p><strong>Parameters</strong> specific to each context will be discussed in subsections that follow. Please <strong>Note</strong> that any parameters specified to a context that are not supported by it will simply be ignored.</p>
+
+<h4 id="contexts-students">Contexts - students</h4>
+
+<p><strong>Response</strong> The server will return a response with mime type <em>text/plain</em>. The response format, however, will be an array of objects in <a href="http://www.json.org/"><strong>JSON</strong> format</a>.</p>
+
+<pre><code class="JSON">[{
+id: 00555555,
+last: 'LastName',
+first: 'FirstName',
+gradyear: '2019',
+major: 'Underwater Basket Weaving',
+email: 'FirstName.LastName@cnu.edu',
+since: '8_25_2014'
+}]
+</code></pre>
+
+<p><strong>Search</strong> A student <em>ID</em> is not required to fetch student records, however, it is the most direct way of obtaining a particular student's data. To search records based on a student's first or last name, simply specify those values as part of the request <em>instead</em> of providing a student <em>ID</em>:</p>
+
+<pre><code>http://mind.cnuapps.me/api/v1/context/students/first/aaron/last/koehl
+</code></pre>
+
+<p>The example above would return all student records matching a first name of &quot;aaron&quot; and a last name of &quot;koehl&quot;. If no records are found, an empty array (in <strong>JSON</strong> format) is returned. <em>Note</em> that if you were to provide a student <em>ID</em> as part of the above example, the <em>first</em> and <em>last</em> parameters would be ignored, as an <em>ID</em> would always give you a single desired result.</p>
+
+<p><strong>Supported Student context keywords</strong> are listed below:</p>
+
+<ul>
+<li><strong>id</strong> A student's CNU ID</li>
+<li><strong>last</strong> A student's last name</li>
+<li><strong>first</strong> A student's first name</li>
+<li><strong>gradyear</strong> A student's graduation year</li>
+<li><strong>major</strong> A student's major (Estimated)</li>
+<li><strong>email</strong> A student's CNU email</li>
+</ul>
+
+<p><strong>Note</strong> (Estimated) fields mean that their value can be an ambiguous string. Because of this, entries most closely matching the value entered will be returned.</p>
+
+<h4 id="contexts-events">Contexts - events</h4>
+
+<p><strong>Response</strong> The server will return a response with mime type <em>text/plain</em>. The response format, however, will be an <em>array</em> of objects in <a href="http://www.json.org/"><strong>JSON</strong> format</a>.</p>
+
+<pre><code class="JSON">[{
+eventid: 11_5_2015,
+eventname: 'Dominion Power',
+semester: 'Fall',
+year: '2015',
+total: 126
+}]
+</code></pre>
+
+<p><strong>Identifiers</strong> Events have a unique identifier, or ID, based on the exact date in which they occurred. They are in the form of <strong>month</strong>_<strong>day</strong>_<strong>fullYear</strong>. An example is shown below for an event having occurred on the <em>25th of December, 2014</em>:</p>
+
+<pre><code>12_25_2014
+</code></pre>
+
+<p>Below is an example of an API request for an event with a specific name. <em>Note</em> that when an event <em>name</em> is specified and not its <em>ID</em>, the API tries to guess the specific event, if more than one event entry is matched, all entries are returned:</p>
+
+<pre><code>http://mind.cnuapps.me/api/v1/context/events/eventname/lockheed%20martin
+</code></pre>
+
+<p>If, however, an <em>ID</em> or an <em>ID</em> <strong>and</strong> an event <em>name</em> are specified, only the single event matched is returned:</p>
+
+<pre><code>http://mind.cnuapps.me/api/v1/context/events/eventname/lockheed%20martin/eventid/10_1_2015
+</code></pre>
+
+<p>Note that you can expand your query even further by specifying an event year, and semester in which it occurred. This is useful if you are searching for an event in particular but do not know its name or identifier:</p>
+
+<pre><code>http://mind.cnuapps.me/api/v1/context/events/semester/fall/year/2015
+</code></pre>
+
+<p><strong>Supported semesters</strong> are:</p>
+
+<ul>
+<li>fall</li>
+<li>spring</li>
+<li>summer</li>
+</ul>
+
+<p>A <em>fall</em> event covers the months from <em>August</em> until <em>December</em>.</p>
+
+<p>A <em>spring</em> event covers the months from <em>January</em> until <em>May</em>.</p>
+
+<p>And a <em>summer</em> event covers the months <em>June</em> and <em>July</em>.</p>
+
+<p><strong>Supported Student context keywords</strong> are listed below:</p>
+
+<ul>
+<li><strong>eventid</strong> An event's unique identifier</li>
+<li><strong>eventname</strong> Name of event / host company (Estimated)</li>
+<li><strong>semester</strong> Search events by semester</li>
+<li><strong>year</strong> Search events by year</li>
+</ul>
+
+<p><strong>Note</strong> (Estimated) fields mean that their value can be an ambiguous string. Because of this, entries most closely matching the value entered will be returned.</p>
+
+<h3 id="notes">Notes</h3>
+
+<p>This API is a work in progress, and as such, not all data pertaining to the Pizza My Mind database will be available at once. Instead, data from years prior to the use of a database will be added over time, the database layout will be restructured to ensure flexibility, and record accuracy checked in chunks as this project matures. Please be advised about the following temporary limitations:</p>
+
+<ul>
+<li>Individual student records will only available from the Fall semester of the year 2014, until the present (API records are updated in real time when the new scanner client is used at upcoming events).</li>
+<li>Attendance records for any event will only be available starting from the Fall semester of the year 2015.</li>
+<li>Individual event records will only be available starting from the Fall semester of the year 2015.</li>
+</ul>
+
+<p>The limitations above will decrease (data sets expanded) as more data from previous years and semesters is parsed and added to the database.</p>
+
+<p>If you have any questions, or wish to leave any feedback, <a href="mailto:juan.vallejo.12@cnu.edu">please email me</a>.</p>
+
+</body>
+</html>

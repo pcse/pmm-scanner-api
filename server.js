@@ -12,6 +12,10 @@ var MYSQL_DB_PORT 	= process.env.OPENSHIFT_MYSQL_DB_PORT 	|| '63966';
 var APP_MAIN_HOST 	= process.env.OPENSHIFT_NODEJS_IP 		|| '0.0.0.0';
 var APP_MAIN_PORT 	= process.env.OPENSHIFT_NODEJS_PORT 	|| 7777;
 
+var ERR_NO_MYSQL_CONNECTION 	= "Unable to access the database at this time. Please try again later.";
+var ERR_API_INVALID_ENDPOINT 	= "Invalid endpoint. Check your URL and try again. (/api/v1/key/value)";
+var ERR_API_MISSING_CONTEXT 	= "A context is required. Please edit your request to include (/context/[students|events|attendance])";
+
 var fs 		= require('fs');
 var socket 	= require('socket.io');
 var http 	= require('http');
@@ -61,18 +65,18 @@ var GLOBAL_DATE_OBJ 				= new Date();
 var GLOBAL_DATE 					= (GLOBAL_DATE_OBJ.getMonth() + 1) + '_' + GLOBAL_DATE_OBJ.getDate() + '_' + GLOBAL_DATE_OBJ.getFullYear();
 
 // establish connection - handle errors if any
-mysql.connect(function(error) {
+// mysql.connect(function(error) {
 
-	if(error) {
-	    return console.log('MYSQL', error);
-	}
+// 	if(error) {
+// 	    return console.log('MYSQL', error);
+// 	}
 
-	databaseConnected = true;
+// 	databaseConnected = true;
 
-	console.log('MYSQL', 'Successfully connected to the mysql server.', 'Setting up database...');
-	initFetchDatabaseEntries();
+// 	console.log('MYSQL', 'Successfully connected to the mysql server.', 'Setting up database...');
+// 	initFetchDatabaseEntries();
 
-});
+// });
 
 var httpServer = http.createServer(function(request, response) {
 
@@ -117,11 +121,231 @@ var httpServer = http.createServer(function(request, response) {
  */
 function parseAPIV1Request(request, response, routedReq) {
 
-	if(!databaseConnected) {
-		return;
+	// if(!databaseConnected) {
+		// return respondWithError(response, ERR_NO_MYSQL_CONNECTION);
+	// }
+
+	var parsedReq = routedReq.split('/api/v1/');
+	var keyValues = parsedReq[1] ? parsedReq[1].split('/') : null;
+
+	if(!parsedReq || !keyValues || keyValues.length < 2) {
+		return respondWithError(response, ERR_API_INVALID_ENDPOINT);
 	}
 
-	response.end("v1");
+	// translations from api key to mysql terms
+	var queryRoutes = {
+		id: 'student_id',
+		context: 'table',
+		eventid: 'event_id',
+		eventname: 'event_name',
+		gradyear: 'grad_year'
+	}
+
+	// default selection
+	var keyValuePairs = {
+
+		// global fields
+		table: 'students', // database table to select entries from
+
+		// student fields
+		student_id: null, // student id
+		first: null, // johnny
+		last: null, // gray
+		grad_year: null,
+		major: null,
+		email: null,
+
+		// event fields
+		event_id: null, // 11_5_2015
+		event_name: null, // lockheed martin
+		semester: null, // spring, summer, fall
+		year: null // 2015
+	};
+
+	var keyValueQuery = "";
+
+	// parse through key-value pairs
+	for(var i = 0; i < keyValues.length; i+=2) {
+		keyValuePairs[(queryRoutes[keyValues[i]] || keyValues[i])] = keyValues[i + 1];
+		keyValueQuery += (queryRoutes[keyValues[i]] || keyValues[i]) + "='" + keyValues[i + 1] + "',";
+	}
+
+	// strip commas
+	if(keyValueQuery[keyValueQuery.length - 1] == ',') {
+		keyValueQuery = keyValueQuery.substring(0, keyValueQuery.length - 1);
+	}
+
+	// format selection values that may contain spaces or special characters
+	if(keyValuePairs.event_name) {
+		keyValuePairs.event_name = decodeURIComponent(keyValuePairs.event_name);
+	}
+
+	if(keyValuePairs.year) {
+		keyValuePairs.year = decodeURIComponent(keyValuePairs.year);
+	}
+
+	if(keyValuePairs.year) {
+		keyValuePairs.year = decodeURIComponent(keyValuePairs.year);
+	}
+
+	var mysqlQuery = '';
+
+	// determine which context the api request wants
+	if(keyValuePairs.table == 'students') {
+
+		// students is a definitions table, no left join required
+
+		mysqlQuery += 'SELECT * FROM `' + keyValuePairs.table +'`';
+
+		if(keyValuePairs.student_id) {
+			mysqlQuery += ' WHERE student_id="' + keyValuePairs.student_id + '"';
+		} else {
+
+			var atLeastOneKey = false;
+
+			if(keyValuePairs.first) {
+				mysqlQuery += ' WHERE first="' + keyValuePairs.first + '"';
+				atLeastOneKey = true;
+			}
+
+			if(keyValuePairs.last) {
+
+				if(atLeastOneKey) {
+					mysqlQuery += ' AND '
+				} else {
+					mysqlQuery += ' WHERE '
+					atLeastOneKey = true;
+				}
+
+				mysqlQuery += 'last="' + keyValuePairs.last + '"';
+			}
+
+			if(keyValuePairs.grad_year) {
+
+				if(atLeastOneKey) {
+					mysqlQuery += ' AND '
+				} else {
+					mysqlQuery += ' WHERE '
+					atLeastOneKey = true;
+				}
+
+				mysqlQuery += 'year="' + keyValuePairs.grad_year + '"';
+
+			}
+
+			if(keyValuePairs.major) {
+
+				if(atLeastOneKey) {
+					mysqlQuery += ' AND '
+				} else {
+					mysqlQuery += ' WHERE '
+					atLeastOneKey = true;
+				}
+
+				mysqlQuery += 'major LIKE "%' + keyValuePairs.major + '%"';
+
+			}
+
+			if(keyValuePairs.email) {
+
+				if(atLeastOneKey) {
+					mysqlQuery += ' AND '
+				} else {
+					mysqlQuery += ' WHERE '
+					atLeastOneKey = true;
+				}
+
+				mysqlQuery += 'email="' + keyValuePairs.email + '"';
+
+			}
+
+		}
+
+	} else if(keyValuePairs.table == 'attendance') {
+
+		
+
+	} else if(keyValuePairs.table == 'events') {
+
+		// events is a definitions table, no left join required
+
+		if(keyValuePairs.event_id) {
+			mysqlQuery = "SELECT t1.table_name AS eventid, t1.event_name AS eventname, t1.semester, t1.year, COUNT(*) AS total FROM `events` AS t1 LEFT JOIN `attendance` AS t2 ON t1.table_name=t2.event_id WHERE t2.event_id='" + keyValuePairs.event_id +"'";
+		} else {
+
+			mysqlQuery = "SELECT t1.event_id, t2.event_name, t2.semester, t2.year, COUNT(t1.event_id) AS total, COUNT(IF(t1.is_new = 1, 1, NULL)) AS total_new FROM `attendance` AS t1 LEFT JOIN `events` AS t2 ON t1.event_id=t2.table_name";
+
+			var atLeastOneKey = false;
+
+			if(keyValuePairs.event_name) {
+				mysqlQuery += ' WHERE t2.event_name LIKE "%' + keyValuePairs.event_name + '%"';
+				atLeastOneKey = true;
+			}
+
+			if(keyValuePairs.semester) {
+
+				if(atLeastOneKey) {
+					mysqlQuery += ' AND '
+				} else {
+					mysqlQuery += ' WHERE '
+					atLeastOneKey = true;
+				}
+
+				mysqlQuery += 'semester="' + keyValuePairs.semester + '"';
+
+			}
+
+			if(keyValuePairs.year) {
+
+				if(atLeastOneKey) {
+					mysqlQuery += ' AND '
+				} else {
+					mysqlQuery += ' WHERE '
+					atLeastOneKey = true;
+				}
+
+				mysqlQuery += 'year="' + keyValuePairs.year + '"';
+
+			}
+
+			mysqlQuery += " GROUP BY t1.event_id";
+
+		}
+
+	} else {
+		return respondWithError(response, ERR_API_MISSING_CONTEXT);
+	}
+
+	console.log(mysqlQuery);
+
+	// mysql.query('SELECT * FROM `attendance` WHERE ' + keyValueQuery, function(err, rows) {
+
+	// 	if(err) {
+	// 		return respondWithError(response, ERR_API_DB_ERR);
+	// 	}
+
+	// });
+
+	response.end(routedReq);
+
+}
+
+/**
+ * Responds an http request with a specified error
+ */
+function respondWithError(response, error, httpCode) {
+
+	var errObj = {
+		error: true,
+		message: error
+	}
+
+	response.writeHead(httpCode || 500);
+	response.end(JSON.stringify(errObj));
+
+}
+
+function respondWithResults() {
 
 }
 
