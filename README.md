@@ -8,13 +8,11 @@ API Documentation
 - **Contexts**
 	- Contexts - students
 		- Using parameters to search
-		- Supported student parameters
 	- Contexts - events
 		- Event identifiers
 		- Events by semester / year
-			- Supported semester parameters
-		- Supported Event parameters
-	- Contexts - attendance
+			- Supported semester parameter values
+- **Parameters**
 - **Notes**
 
 ###Introduction
@@ -39,23 +37,28 @@ http://mind.cnuapps.me/api/v1/id/0055555
 
 ###Contexts
 
-API consists of three different `contexts`. Contexts can be thought of as categories, or modes.
+API consists of two different `contexts`. Contexts can be thought of as modes for your data output.
 
-There are three different types of **contexts**
+There are two different types of **contexts**
 
 - `students`
 - `events`
-- `attendance`
 
-By default, the **students** context is chosen, if no context is specified in the *URL*. 
+A **students** context returns a set of data with one or more items. Data is based on students, meaning that output will consist solely of student information. For example, a request with this context with parameters consisting of a *last name* of *Smith* and an *event name* of *Dominion Power* will yield *n* amount of results, where *n* is the number of students with a *last name* of *Smith* that happened to attend an event hosted by *Dominion Power*. An example of this request is shown below:
 
-A **students** context returns a set of data with one or more items. Each item in the set contains information specific to a student, such as their name, student id, when they were added to the database, or what their major is. (These fields, as well as the ones returned for other contexts will be discussed in better detail further in the guide).
+```
+http://mind.cnuapps.me/api/v1/context/students/last/smith/eventname/dominion
+```
 
-An **events** context returns a set of data with one or more items. Each item in the set is a Pizza My Mind "Event".  much like discussed in the previous context, items contain information specific only to the event they represent. This includes a particular event's semester, year in which it occurred, the name of the company that hosted the event, the total number of students that attended, and the total number of students that attended but had no previous record of registering at a Pizza My Mind event.
+An **events** context returns a set of data with one or more items. Output is based on event information, meaning that a request with this context, containing parameters consisting of   a *student major* of *Computer Science* and a *last name* of *Smith* will return all events where students with a last name of *Smith* and a major in *Computer Science* attended. An example of this request is shown below:
 
-An **attendance** context behaves a bit different from previously discussed contexts. Attendance records *are event-based* and can be requested for a specific student, for a specific student at a specific event, for a specific event, for a set of events occurring in a specific year or semester (or both), for a student attending an event that occurred in a specific year and /or semester, etc. Because attendance requests can be a bit ambiguous, results are always returned in a set (as an array of objects), but the contents of such objects differ each time. Please refer to the *Contexts - attendance* section for a more detailed breakdown of this endpoint.
+```
+http://mind.cnuapps.me/api/v1/context/events/last/smith/major/computer
+```
 
-**Parameters** specific to each context will be discussed in subsections that follow. Please **Note** that any parameters specified to a context that are not supported by it will simply be ignored.
+By default, the **events** context is assumed, if no context is specified in the *URL*. 
+
+**Parameters** All documented parameters are supported in each different *context*. Please see this section for detailed description of each URL parameter supported.
 
 **Please note** that the order in which any key-value pairs are specified does not matter. A request such as:
 
@@ -82,29 +85,18 @@ would be equally valid if specified as:
 "major": "Underwater Basket Weaving",
 "email": "FirstName.LastName@cnu.edu",
 "since": "8_25_2014",
-"total_events": 9,
-"total_events_current_semester": 14
+"total": 9,
+"total_new": 1
 }]
 ```
 
-**Search** A student *ID* is not required to fetch student records, however, it is the most direct way of obtaining a particular student's data. To search records based on a student's first or last name, simply specify those values as part of the request *instead* of providing a student *ID*:
+**Search** A student *ID* is not required to fetch student records, however, it is the most direct way of obtaining a particular student's data. To search records based on a student's first or last name, simply specify those values as part of the request:
 
 ```
 http://mind.cnuapps.me/api/v1/context/students/first/aaron/last/koehl
 ```
 
-The example above would return all student records matching  a first name of "aaron" and a last name of "koehl". If no records are found, an empty array (in **JSON** format) is returned. *Note* that if you were to provide a student *ID* as part of the above example, the *first* and *last* parameters would be ignored, as an *ID* would always give you a single desired result.
-
-**Supported Student context keywords** are listed below:
-
-- **id** 			A student's CNU ID
-- **last** 			A student's last name
-- **first** 			A student's first name
-- **gradyear** 	A student's graduation year
-- **major** 		A student's major (Estimated)
-- **email** 		A student's CNU email
-
-**Note** (Estimated) fields mean that their value can be an ambiguous string. Because of this, entries most closely matching the value entered will be returned.
+The example above would return all student records matching  a first name of Aaron" and a last name of "Koehl". If no records are found, an empty array (in **JSON** format) is returned.
 
 ####Contexts - events
 
@@ -133,10 +125,15 @@ Below is an example of an API request for an event with a specific name. *Note* 
 http://mind.cnuapps.me/api/v1/context/events/eventname/lockheed%20martin
 ```
 
-If, however, an *ID* or an *ID* **and** an event *name* are specified, only the single event matched is returned:
+If, however, an *ID* or an *ID* **and** an event *name* are specified,  the single event matched is still returned in an array:
 
 ```
 http://mind.cnuapps.me/api/v1/context/events/eventname/lockheed%20martin/eventid/10_1_2015
+```
+
+The above example would yield the result below:
+
+```
 ```
 
 Note that you can expand your query even further by specifying an event year, and semester in which it occurred. This is useful if you are searching for an event in particular but do not know its name or identifier:
@@ -145,7 +142,7 @@ Note that you can expand your query even further by specifying an event year, an
 http://mind.cnuapps.me/api/v1/context/events/semester/fall/year/2015
 ```
 
-**Supported semesters** are:
+**Supported semester values** are:
 
 - fall
 - spring
@@ -157,44 +154,25 @@ A *spring* event covers the months from *January* until *May*.
 
 And a *summer* event covers the months *June* and *July*.
 
-**Supported Student context keywords** are listed below:
+###Parameters
 
-- **eventid** 			An event's unique identifier
-- **eventname** 		Name of event / host company (Estimated)
-- **semester** 			Search events by semester
-- **year** 				Search events by year
+URL parameters can be mixed and matched in any order. Below is a breakdown of each one. *Note* that context does not matter for the type of parameters you can use:
 
-**Note** (Estimated) fields mean that their value can be an ambiguous string. Because of this, entries most closely matching the value entered will be returned.
+**Supported API URL keywords** are listed below:
 
-####Contexts - attendance
+- **email** 			A student's CNU email
+- **first** 			A student's first name
+- **gradyear** 		A student's graduation year
+- **id** 				A student's CNU ID
+- **last** 				A student's last name
+- **major** 			A student's major (Estimated)
 
-**Response** The server will return a response with mime type *text/plain*. The response format, however, will be an *array* of objects in [**JSON** format](http://www.json.org/). The response fields *total* and *total_new* will always refer to the amount of students found at that event given any supported parameters.
+- **eventid** 		An event's unique identifier
+- **eventname** 	Name of event / host company (Estimated)
+- **semester** 		Semester an event occurred
+- **year** 			Year an event occurred
 
-```JSON
-[{
-"event_id": "11_5_2015",
-"event_name": "Dominion Power",
-"semester": "Fall",
-"year": "2015",
-"total": "126",
-"total_new": "3"
-}]
-```
-
-**Mix and match** Unlike other *contexts*, all parameters are supported in an *attendance context*. However, the records returned are *general* and do not contain references to any other records. For example, an attendance response containing all events where students with the last name *Smith* attended will not include an array of all students with the last name *Smith* that actually attended each particular event. An example of such query is shown below:
-
-```
-http://mind.cnuapps.me/api/v1/context/attendance/last/smith
-```
-
-An **attendance** context behaves a bit different from previously discussed contexts. Attendance records can be requested for a specific student, for a specific student at a specific event, for a specific event, for a set of events occurring in a specific year or semester (or both), for a student attending an event that occurred in a specific year and /or semester, etc. Because attendance requests can be a bit ambiguous, results are always returned in a set (as an array of objects), but the contents of such objects differ each time. Please refer to the *Contexts - attendance* section for a more detailed breakdown of this endpoint.
-
-- [+] give all events where student w/ id, name, email attended
-- [-] give all students that attended a specific event
-- which students attended which event
-- [+] Which events a student attended
-- Which students attended an event
-- It is possible to obtain a list of events for a student, but not a list of students for an event
+**Note** (Estimated) fields mean that their value can be an ambiguous string. Because of this, entries most closely matching the value entered will be returned. This means either part of the value or all of the value may be specified.
 
 ###Notes
 
