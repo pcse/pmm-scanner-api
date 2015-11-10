@@ -141,7 +141,6 @@ function parseAPIV1Request(request, response, routedReq) {
 	// translations from api key to mysql terms
 	var queryRoutes = {
 		id: 'student_id',
-		context: 'table',
 		eventid: 'event_id',
 		eventname: 'event_name',
 		gradyear: 'grad_year'
@@ -151,7 +150,7 @@ function parseAPIV1Request(request, response, routedReq) {
 	var keyValuePairs = {
 
 		// global fields
-		table: 'events', // database table to select entries from
+		context: 'events', // database context to select entries from
 
 		// student fields
 		student_id: null, // student id
@@ -196,145 +195,66 @@ function parseAPIV1Request(request, response, routedReq) {
 
 	var mysqlQuery = '';
 
-	// determine which context the api request wants
-	if(keyValuePairs.table == 'students' || keyValuePairs.table == 'events' || keyValuePairs.table == 'general') {
+	// translate parameter keys into mysql column names where needed
+	var mysqlRoutes = {
+		grad_year: 'year',
+		event_id: 'table_name',
 
-		// returns results from a "student" context
-		if(keyValuePairs.table == 'students') {
+	}
+
+	// determine which context the api request wants
+	if(keyValuePairs.context == 'students' || keyValuePairs.context == 'events' || keyValuePairs.context == 'general') {
+
+		// returns results from a "student | events | general" context
+		if(keyValuePairs.context == 'students') {
 			mysqlQuery = "SELECT t1.student_id AS id, t3.first, t3.last, t3.major, t3.year AS gradyear, t3.email, t3.date_added AS since, COUNT(t1.student_id) AS total, COUNT(IF(t1.is_new = 1, 1, NULL)) AS total_new FROM `attendance` AS t1 LEFT JOIN `students` AS t3 ON t1.student_id=t3.student_id LEFT JOIN `events` AS t2 ON t1.event_id=t2.table_name";
-		} else if(keyValuePairs.table == 'events') {
+		} else if(keyValuePairs.context == 'events') {
 			mysqlQuery = "SELECT t1.event_id, t2.event_name, t2.semester, t2.year, COUNT(t1.student_id) AS total, COUNT(IF(t1.is_new = 1, 1, NULL)) AS total_new FROM `attendance` AS t1 LEFT JOIN `students` AS t3 ON t1.student_id=t3.student_id LEFT JOIN `events` AS t2 ON t1.event_id=t2.table_name";
 		} else {
 			mysqlQuery = "SELECT t1.event_id, t2.event_name, t2.semester, t2.year, t3.student_id AS id, t3.first, t3.last, t3.major, t3.year AS gradyear, t3.email, t3.date_added AS since FROM `attendance` AS t1 LEFT JOIN `students` AS t3 ON t1.student_id=t3.student_id LEFT JOIN `events` AS t2 ON t1.event_id=t2.table_name";
 		}
 
+		// valid mysql parameter dictionary
+		var mysqlRoutes = {
+			student_id: 	't1.student_id="' + keyValuePairs.student_id + '"',
+			first: 			't3.first="' + keyValuePairs.first + '"',
+			last: 			't3.last="' + keyValuePairs.last + '"',
+			grad_year: 		't3.year="' + keyValuePairs.grad_year + '"',
+			major: 			't3.major LIKE "%' + keyValuePairs.major + '%"',
+			email: 			't3.email="' + keyValuePairs.email + '"',
+			event_id: 		't2.table_name="' + keyValuePairs.event_id + '"',
+			event_name: 	't2.event_name LIKE "%' + keyValuePairs.event_name + '%"',
+			semester: 		't2.semester="' + keyValuePairs.semester + '"',
+			year: 			't2.year="' + keyValuePairs.year + '"'
+		}
+
 		var atLeastOneKey = false;
 
-		// handle student parameters
-		if(keyValuePairs.student_id) {
-			mysqlQuery += ' WHERE t1.student_id="' + keyValuePairs.student_id + '"';
-			atLeastOneKey = true;
-		}
-			
-		if(keyValuePairs.first) {
+		// determines wheter to add AND or WHERE
+		// mysql statement depending on the value of
+		// atLeastOneKey
+		function andWhereConverter() {
 
 			if(atLeastOneKey) {
-				mysqlQuery += ' AND '
+				mysqlQuery += ' AND ';
 			} else {
-				mysqlQuery += ' WHERE '
+				mysqlQuery += ' WHERE ';
 				atLeastOneKey = true;
 			}
 
-			mysqlQuery += 't3.first="' + keyValuePairs.first + '"';
 		}
 
-		if(keyValuePairs.last) {
-
-			if(atLeastOneKey) {
-				mysqlQuery += ' AND '
-			} else {
-				mysqlQuery += ' WHERE '
-				atLeastOneKey = true;
+		// loop through params and add to mysql query
+		for(var key in keyValuePairs) {
+			if(keyValuePairs[key] && mysqlRoutes[key]) {
+				andWhereConverter();
+				mysqlQuery += mysqlRoutes[key];
 			}
-
-			mysqlQuery += 't3.last="' + keyValuePairs.last + '"';
 		}
 
-		if(keyValuePairs.grad_year) {
-
-			if(atLeastOneKey) {
-				mysqlQuery += ' AND '
-			} else {
-				mysqlQuery += ' WHERE '
-				atLeastOneKey = true;
-			}
-
-			mysqlQuery += 't3.year="' + keyValuePairs.grad_year + '"';
-
-		}
-
-		if(keyValuePairs.major) {
-
-			if(atLeastOneKey) {
-				mysqlQuery += ' AND '
-			} else {
-				mysqlQuery += ' WHERE '
-				atLeastOneKey = true;
-			}
-
-			mysqlQuery += 't3.major LIKE "%' + keyValuePairs.major + '%"';
-
-		}
-
-		if(keyValuePairs.email) {
-
-			if(atLeastOneKey) {
-				mysqlQuery += ' AND '
-			} else {
-				mysqlQuery += ' WHERE '
-				atLeastOneKey = true;
-			}
-
-			mysqlQuery += 't3.email="' + keyValuePairs.email + '"';
-
-		}
-
-		// handle event parameters
-		if(keyValuePairs.event_id) {
-
-			if(atLeastOneKey) {
-				mysqlQuery += ' AND '
-			} else {
-				mysqlQuery += ' WHERE '
-				atLeastOneKey = true;
-			}
-
-			mysqlQuery += 't2.table_name="' + keyValuePairs.event_id + '"';
-
-		}
-
-		if(keyValuePairs.event_name) {
-
-			if(atLeastOneKey) {
-				mysqlQuery += ' AND '
-			} else {
-				mysqlQuery += ' WHERE '
-				atLeastOneKey = true;
-			}
-
-			mysqlQuery += 't2.event_name LIKE "%' + keyValuePairs.event_name + '%"';
-
-		}
-
-		if(keyValuePairs.semester) {
-
-			if(atLeastOneKey) {
-				mysqlQuery += ' AND '
-			} else {
-				mysqlQuery += ' WHERE '
-				atLeastOneKey = true;
-			}
-
-			mysqlQuery += 't2.semester="' + keyValuePairs.semester + '"';
-
-		}
-
-		if(keyValuePairs.year) {
-
-			if(atLeastOneKey) {
-				mysqlQuery += ' AND '
-			} else {
-				mysqlQuery += ' WHERE '
-				atLeastOneKey = true;
-			}
-
-			mysqlQuery += 't2.year="' + keyValuePairs.year + '"';
-
-		}
-
-		if(keyValuePairs.table == 'students') {
+		if(keyValuePairs.context == 'students') {
 			mysqlQuery += " GROUP BY t1.student_id";
-		} else if(keyValuePairs.table == 'events') {
+		} else if(keyValuePairs.context == 'events') {
 			mysqlQuery += " GROUP BY t1.event_id";
 		}
 
