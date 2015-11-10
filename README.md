@@ -202,6 +202,7 @@ And a *summer* event covers the months *June* and *July*.
 "first":"firstName",
 "last":"lastName",
 "major":"Computer Science",
+"gradyear": 2016,
 "email":"firstName.lastName@cnu.edu",
 "since":"8_25_15"
 }]
