@@ -636,7 +636,7 @@ function syncDatabases(clientEntries, client) {
 	// for the current event
 	if(clientEntries.attendanceHash) {
 
-		console.log('SERVER', 'SYNC', 'HASH', 'Length =', clientEntries.attendanceHash.total, '; Hash = ', clientEntries.attendanceHash.md5);
+		console.log('SERVER', 'SYNC', 'HASH', 'Comparing: Length =', clientEntries.attendanceHash.total, '; Hash = ', clientEntries.attendanceHash.md5);
 
 		mysql.query('SELECT MD5(concat(student_id, event_id, is_new, COUNT(*))) AS md5, COUNT(*) AS total FROM `attendance` ORDER BY student_id DESC', function(err, rows) {
 
@@ -656,6 +656,8 @@ function syncDatabases(clientEntries, client) {
 		});
 	}
 
+	// differs from attendance above as this syncs FULL attendance data
+	// not just attendance data for the current event
 	if(clientEntries.attendanceData) {
 
 		if(!databaseEntries.attendanceFull) {
