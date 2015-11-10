@@ -467,7 +467,12 @@ function initSocketListener() {
 		// consists of student rows, event rows, and attendance rows
 		client.on('eventdata', function(data) {
 			console.log('SERVER', 'SYNC', 'EVENT', 'Syncing database information...');
-			syncDatabases(data);
+			syncDatabases(data, client);
+		});
+
+		// client sends full attendance data
+		client.on('attendancedata', function(data) {
+			syncDatabases(data, client);
 		});
 
 		/**
@@ -485,7 +490,7 @@ function initSocketListener() {
  * with current entries. Algorithm always prefers passed entries
  * as most recent. Cloud entries WILL be updated with client entries
  */
-function syncDatabases(clientEntries) {
+function syncDatabases(clientEntries, client) {
 
 	var _time = Date.now();
 	var entriesSynced = 0;
@@ -624,6 +629,95 @@ function syncDatabases(clientEntries) {
 				});
 			}
 		}
+	}
+
+	// if present, compare with hash of attendance table and determine if there are any differences
+	// this differs from attendance above, as this is the FULL attendance table, not just the entries
+	// for the current event
+	if(clientEntries.attendanceHash) {
+
+		console.log('SERVER', 'SYNC', 'HASH', 'Length =', clientEntries.attendanceHash.total, '; Hash = ', clientEntries.attendanceHash.md5);
+
+		mysql.query('SELECT MD5(concat(student_id, event_id, is_new, COUNT(*))) AS md5, COUNT(*) AS total FROM `attendance` ORDER BY student_id DESC', function(err, rows) {
+
+			if(err) {
+				return console.log('API', 'SYNC', 'ERR', err);
+			}
+
+			
+
+			if(rows[0].total == clientEntries.attendanceHash.total && rows[0].md5 == clientEntries.attendanceHash.md5) {
+				return console.log('SERVER', 'SYNC', 'HASH', 'Comaring: Length =', rows[0].total, '; Hash = ', rows[0].md5);
+			}
+
+			console.log('SERVER', 'SYNC', 'HASH', 'Attendance data mismatch, requesting updated dataset from client.');
+			client.emit('requestattendancedata');
+
+		});
+	}
+
+	if(clientEntries.attendanceData) {
+
+		if(!databaseEntries.attendanceFull) {
+			databaseEntries.attendanceFull = [];
+		}
+
+		console.log('SERVER', 'SYNC', 'ATTENDANCEDATA', 'Received full attendance data from client', client.id);
+		mysql.query('SELECT * FROM `attendance`', function(err, rows) {
+
+			if(err) {
+				return console.log('SERVER', 'SYNC', 'ATTENDANCE', 'ERR', err);
+			}
+
+			var diff = [];
+
+			for(var i = 0; i < clientEntries.attendanceData.length; i++) {
+				
+				var entryExists = false;
+
+				for(var x = 0; x < rows.length && !entryExists; x++) {
+					if(clientEntries.attendanceData[i].student_id == rows[x].student_id && clientEntries.attendanceData[i].event_id == rows[x].event_id) {
+						entryExists = true;
+					}
+				}
+
+				if(!entryExists) {
+					diff.push(clientEntries.attendanceData[i]);
+
+					// determine if entry exists in databaseEntries.attendance
+					var exists = false;
+					for(var y = 0; y < databaseEntries.attendance.length; y++) {
+						if(databaseEntries.attendance[y].student_id == clientEntries.attendanceData[i].student_id && databaseEntries.attendance[y].event_id == clientEntries.attendanceData[i].event_id) {
+							exists = true;
+						}
+					}
+
+					// only push to local database attendance entries if
+					// the missing entry matches the current event's date
+					if(clientEntries.attendanceData[i].event_id == GLOBAL_DATE && exists) {
+						databaseEntries.attendance.push(clientEntries.attendanceData[i]);
+						databaseEntries.attendanceFull.push(clientEntries.attendanceData[i]);
+					}
+				}
+
+			}
+
+			if(diff.length) {
+				console.log('SERVER', 'SYNC', 'DIFF', 'Found', diff.length, 'FULL attendance records missing from remote database. Adding...');
+				for(var i = 0; i < diff.length; i++) {
+					mysql.query('INSERT INTO `attendance` (student_id, event_id, is_new) VALUES ("' + diff[i].student_id + '", "' + diff[i].event_id + '", "' + diff[i].is_new + '")', function(err) {
+						if(err) {
+							return console.log('SERVER', 'SYNC', 'DIFF', 'ERR', err);
+						}
+
+						console.log('SERVER', 'SYNC', 'DIFF', 'Successfully updated `attendance` with client data.');
+						updateDatabaseTimestamp();
+
+					});
+				}
+			}			
+
+		});
 	}
 	
 }
