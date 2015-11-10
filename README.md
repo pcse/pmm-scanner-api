@@ -193,8 +193,33 @@ And a *summer* event covers the months *June* and *July*.
 **Response** The server will return a response with mime type *text/plain*. The response format, however, will be an *array* of objects in [**JSON** format](http://www.json.org/).
 
 ```JSON
-[{"event_id":"10_1_2015","event_name":"Lockheed Martin","semester":"fall","year":"2015","id":"00555555","first":"firstName","last":"lastName","major":"Computer Science","email":"firstName.lastName@cnu.edu","since":"8_25_15"}]
+[{
+"event_id": "10_1_2015",
+"event_name":"Lockheed Martin",
+"semester":"fall",
+"year":"2015",
+"id":"00555555",
+"first":"firstName",
+"last":"lastName",
+"major":"Computer Science",
+"email":"firstName.lastName@cnu.edu",
+"since":"8_25_15"
+}]
 ```
+
+These are fields (or keys) found in each item returned:
+
+- **email** 			A student's CNU email
+- **first** 				A student's first name
+- **gradyear** 		A student's graduating year
+- **id** 				A student's CNU ID
+- **last** 				A student's last name
+- **major** 			A student's current major
+- **since** 			Date when student was added to database
+- **event_id** 		An event's identifier
+- **event_name** 	Name of host company for this event
+- **semester** 		Semester in which this event occurred
+- **year** 			Year in which this event occurred
 
 **Relationship** Because this context is a *many to many* relationship between *events* and *students*, every response will contain fields from both an *events* context and *student* context. Responses may contain objects sharing exact information for events, or students, or both, depending on the type of parameters passed. Below is an example of a request for all events where students with the last name *Anderson* attended:
 

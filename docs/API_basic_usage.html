@@ -206,8 +206,35 @@
 
 <p><strong>Response</strong> The server will return a response with mime type <em>text/plain</em>. The response format, however, will be an <em>array</em> of objects in <a href="http://www.json.org/"><strong>JSON</strong> format</a>.</p>
 
-<pre><code class="JSON">[{&quot;event_id&quot;:&quot;10_1_2015&quot;,&quot;event_name&quot;:&quot;Lockheed Martin&quot;,&quot;semester&quot;:&quot;fall&quot;,&quot;year&quot;:&quot;2015&quot;,&quot;id&quot;:&quot;00555555&quot;,&quot;first&quot;:&quot;firstName&quot;,&quot;last&quot;:&quot;lastName&quot;,&quot;major&quot;:&quot;Computer Science&quot;,&quot;email&quot;:&quot;firstName.lastName@cnu.edu&quot;,&quot;since&quot;:&quot;8_25_15&quot;}]
+<pre><code class="JSON">[{
+&quot;event_id&quot;: &quot;10_1_2015&quot;,
+&quot;event_name&quot;:&quot;Lockheed Martin&quot;,
+&quot;semester&quot;:&quot;fall&quot;,
+&quot;year&quot;:&quot;2015&quot;,
+&quot;id&quot;:&quot;00555555&quot;,
+&quot;first&quot;:&quot;firstName&quot;,
+&quot;last&quot;:&quot;lastName&quot;,
+&quot;major&quot;:&quot;Computer Science&quot;,
+&quot;email&quot;:&quot;firstName.lastName@cnu.edu&quot;,
+&quot;since&quot;:&quot;8_25_15&quot;
+}]
 </code></pre>
+
+<p>These are fields (or keys) found in each item returned:</p>
+
+<ul>
+<li><strong>email</strong> A student's CNU email</li>
+<li><strong>first</strong> A student's first name</li>
+<li><strong>gradyear</strong> A student's graduating year</li>
+<li><strong>id</strong> A student's CNU ID</li>
+<li><strong>last</strong> A student's last name</li>
+<li><strong>major</strong> A student's current major</li>
+<li><strong>since</strong> Date when student was added to database</li>
+<li><strong>event_id</strong> An event's identifier</li>
+<li><strong>event_name</strong> Name of host company for this event</li>
+<li><strong>semester</strong> Semester in which this event occurred</li>
+<li><strong>year</strong> Year in which this event occurred</li>
+</ul>
 
 <p><strong>Relationship</strong> Because this context is a <em>many to many</em> relationship between <em>events</em> and <em>students</em>, every response will contain fields from both an <em>events</em> context and <em>student</em> context. Responses may contain objects sharing exact information for events, or students, or both, depending on the type of parameters passed. Below is an example of a request for all events where students with the last name <em>Anderson</em> attended:</p>
 
