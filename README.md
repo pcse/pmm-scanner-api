@@ -30,7 +30,7 @@ An API request is formatted with slashes, requesting data in the form of "key-va
 /id/00555555
 ```
 
-The request above, would return all stored data for a student with a student ID of *00555555*. Below is an example of the above request showing the full format, including the API endpoint:
+The request above, would return all stored *event* data for a student with a student ID of *00555555*. Below is an example of the above request showing the full format, including the API endpoint:
 
 ```
 http://mind.cnuapps.me/api/v1/id/0055555
@@ -52,21 +52,21 @@ A **students** context returns a set of data with one or more items in a *many s
 http://mind.cnuapps.me/api/v1/context/students/last/smith/eventname/dominion
 ```
 
-An **events** context returns a set of data with one or more items in a *many events to one students* relationship. Output is based on event information, meaning that a request with this context, containing parameters consisting of   a *student major* of *Computer Science* and a *last name* of *Smith* will return all events where students with a last name of *Smith* and a major in *Computer Science* attended. An example of this request is shown below:
+An **events** context returns a set of data with one or more items in a *many events to one student* relationship. Output is based on event information, meaning that a request with this context, containing parameters consisting of  a *student major* in *Computer Science* and a *last name* of *Smith* will return a list of events where students with a last name of *Smith* and a major in *Computer Science* attended. An example of this request is shown below:
 
 ```
 http://mind.cnuapps.me/api/v1/context/events/last/smith/major/computer
 ```
 
-A **general** context is a bit different from the previously discussed ones. The main difference with a *general* context is that data is returned as a *many to many* relationship between *events* and *students*. A *general* context does not group data sets by unique identifiers (student ID, event ID, etc). This means that a data set returned may have several items with the same event information for each student that attended it, or several  items with the same student information for every event that the particular student attended. This context returns all of the fields that both an *events* context and a *students* context would return. The example below queries for all events attended by every students in the database:
+A **general** context is a bit different from the previously discussed ones. The main difference with a *general* context is that data is returned in a *many to many* relationship between *events* and *students*. A *general* context does not group data sets by unique identifiers (student ID, event ID, etc). This means that a data set returned may have several items with the same event information for each student that attended it, or several  items with the same student information for every event that the particular student attended. This context returns all of the fields that both an *events* context and a *students* context would return. The example below queries for all events attended by every students in the database:
 
 ```
 http://mind.cnuapps.me/api/v1/context/general
 ```
 
-By default, the **events** context is assumed, if no context is specified in the *URL*. 
+By default, an **events** context is assumed with every request, if no context is specified in a *URL* request. 
 
-**Parameters** All documented parameters are supported in each different *context*. Please see this section for detailed description of each URL parameter supported.
+**Parameters** All documented parameters are fully supported any *context*. Please see this section for detailed description of each URL parameter supported.
 
 **Please note** that the order in which any key-value pairs are specified does not matter. A request such as:
 
@@ -82,7 +82,7 @@ would be equally valid if specified as:
 
 ####Contexts - students
 
-**Response** The server will return a response with mime type *text/plain*. The response format, however, will be an array of objects in [**JSON** format](http://www.json.org/).
+**Response** The server will return a response with a mime type of *text/plain*. The response format, however, will be an array of objects in [**JSON** format](http://www.json.org/).
 
 ```JSON
 [{
@@ -234,9 +234,9 @@ http://mind.cnuapps.me/api/v1/context/events
 
 ###Notes
 
-This API is a work in progress, and as such, not all data pertaining to the Pizza My Mind database will be available at once. Instead, data from years prior to the use of a database will be added over time, the database layout will be restructured to ensure flexibility, and record accuracy checked in chunks as this project matures. Please be advised about the following temporary limitations:
+This API is a work in progress, and as such, not all data pertaining to the Pizza My Mind database will be available from the start. Instead, data from years prior to the use of a database for registering students at events will be added over time and record accuracy checked in chunks as this project matures. Please be advised about the following temporary limitations:
 
-- Individual student records will only available from the Fall semester of the year 2014, until the present (API records are updated in real time when the new scanner client is used at upcoming events).
+- Individual student records will only available from the Fall semester of the year 2014, until the present (API records are updated in real time when the updated scanner client is used at upcoming events).
 - Attendance records for any event will only be available starting from the Fall semester of the year 2015.
 - Individual event records will only be available starting from the Fall semester of the year 2015.
 

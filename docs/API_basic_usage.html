@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8"/>
+</head>
+<body>
+<h1 id="apidocumentation">API Documentation</h1>
+
+<h3 id="tableofcontents">Table of Contents</h3>
+
+<ul>
+<li><strong>Introduction</strong>
+
+<ul>
+<li>API endpoint and format</li>
+</ul></li>
+<li><strong>Contexts</strong>
+
+<ul>
+<li>Contexts - students
+
+<ul>
+<li>Using parameters to search</li>
+</ul></li>
+<li>Contexts - events
+
+<ul>
+<li>Event identifiers</li>
+<li>Events by semester / year
+
+<ul>
+<li>Supported semester parameter values</li>
+</ul></li>
+</ul></li>
+<li>Contexts - general</li>
+</ul></li>
+<li><strong>Parameters</strong></li>
+<li><strong>Notes</strong></li>
+</ul>
+
+<h3 id="introduction">Introduction</h3>
+
+<p>Using the API consists of a standard <strong>GET</strong> request to a dedicated endpoint that handles client requests specific to the API. This endpoint is shown below. Any request made to the API should begin with the following format:</p>
+
+<pre><code>http://mind.cnuapps.me/api/v1/
+</code></pre>
+
+<p>An API request is formatted with slashes, requesting data in the form of &quot;key-value&quot; pairs. Only keys that are supported by the current API version may be used. An example is shown below:</p>
+
+<pre><code>/id/00555555
+</code></pre>
+
+<p>The request above, would return all stored <em>event</em> data for a student with a student ID of <em>00555555</em>. Below is an example of the above request showing the full format, including the API endpoint:</p>
+
+<pre><code>http://mind.cnuapps.me/api/v1/id/0055555
+</code></pre>
+
+<h3 id="contexts">Contexts</h3>
+
+<p>API consists of three different <code>contexts</code>. Contexts can be thought of as modes for your data output.</p>
+
+<p>There are three different types of <strong>contexts</strong></p>
+
+<ul>
+<li><code>students</code></li>
+<li><code>events</code></li>
+<li><code>general</code></li>
+</ul>
+
+<p>A <strong>students</strong> context returns a set of data with one or more items in a <em>many students to one event</em> relationship. Data is based on students, meaning that output will consist solely of student information. For example, a request with this context with parameters consisting of a <em>last name</em> of <em>Smith</em> and an <em>event name</em> of <em>Dominion Power</em> will yield <em>n</em> amount of results, where <em>n</em> is the number of students with a <em>last name</em> of <em>Smith</em> that happened to attend an event hosted by <em>Dominion Power</em>. An example of this request is shown below:</p>
+
+<pre><code>http://mind.cnuapps.me/api/v1/context/students/last/smith/eventname/dominion
+</code></pre>
+
+<p>An <strong>events</strong> context returns a set of data with one or more items in a <em>many events to one student</em> relationship. Output is based on event information, meaning that a request with this context, containing parameters consisting of a <em>student major</em> in <em>Computer Science</em> and a <em>last name</em> of <em>Smith</em> will return a list of events where students with a last name of <em>Smith</em> and a major in <em>Computer Science</em> attended. An example of this request is shown below:</p>
+
+<pre><code>http://mind.cnuapps.me/api/v1/context/events/last/smith/major/computer
+</code></pre>
+
+<p>A <strong>general</strong> context is a bit different from the previously discussed ones. The main difference with a <em>general</em> context is that data is returned in a <em>many to many</em> relationship between <em>events</em> and <em>students</em>. A <em>general</em> context does not group data sets by unique identifiers (student ID, event ID, etc). This means that a data set returned may have several items with the same event information for each student that attended it, or several items with the same student information for every event that the particular student attended. This context returns all of the fields that both an <em>events</em> context and a <em>students</em> context would return. The example below queries for all events attended by every students in the database:</p>
+
+<pre><code>http://mind.cnuapps.me/api/v1/context/general
+</code></pre>
+
+<p>By default, an <strong>events</strong> context is assumed with every request, if no context is specified in a <em>URL</em> request. </p>
+
+<p><strong>Parameters</strong> All documented parameters are fully supported any <em>context</em>. Please see this section for detailed description of each URL parameter supported.</p>
+
+<p><strong>Please note</strong> that the order in which any key-value pairs are specified does not matter. A request such as:</p>
+
+<pre><code>/context/students/major/philosophy/year/2016
+</code></pre>
+
+<p>would be equally valid if specified as:</p>
+
+<pre><code>/year/2016/major/philosophy/context/students
+</code></pre>
+
+<h4 id="contexts-students">Contexts - students</h4>
+
+<p><strong>Response</strong> The server will return a response with a mime type of <em>text/plain</em>. The response format, however, will be an array of objects in <a href="http://www.json.org/"><strong>JSON</strong> format</a>.</p>
+
+<pre><code class="JSON">[{
+&quot;id&quot;: &quot;00555555&quot;,
+&quot;last&quot;: &quot;LastName&quot;,
+&quot;first&quot;: &quot;FirstName&quot;,
+&quot;gradyear&quot;: &quot;2019&quot;,
+&quot;major&quot;: &quot;Underwater Basket Weaving&quot;,
+&quot;email&quot;: &quot;FirstName.LastName@cnu.edu&quot;,
+&quot;since&quot;: &quot;8_25_2014&quot;,
+&quot;total&quot;: 9,
+&quot;total_new&quot;: 1
+}]
+</code></pre>
+
+<p><strong>Response Fields</strong></p>
+
+<p>These are fields (or keys) found in each item returned:</p>
+
+<ul>
+<li><strong>email</strong> A student's CNU email</li>
+<li><strong>first</strong> A student's first name</li>
+<li><strong>gradyear</strong> A student's graduating year</li>
+<li><strong>id</strong> A student's CNU ID</li>
+<li><strong>last</strong> A student's last name</li>
+<li><strong>major</strong> A student's current major</li>
+<li><strong>since</strong> Date when student was added to database</li>
+<li><strong>total</strong> Total # of events student has attended</li>
+<li><strong>total_new</strong> Total # of events where student had to register (ideally this number would always be 1 if database integrity had persisted since it was created)</li>
+</ul>
+
+<p><strong>Search</strong> A student <em>ID</em> is not required to fetch student records, however, it is the most direct way of obtaining a particular student's data. To search records based on a student's first or last name, simply specify those values as part of the request:</p>
+
+<pre><code>http://mind.cnuapps.me/api/v1/context/students/first/aaron/last/koehl
+</code></pre>
+
+<p>The example above would return all student records matching a first name of Aaron&quot; and a last name of &quot;Koehl&quot;. If no records are found, an empty array (in <strong>JSON</strong> format) is returned.</p>
+
+<h4 id="contexts-events">Contexts - events</h4>
+
+<p><strong>Response</strong> The server will return a response with mime type <em>text/plain</em>. The response format, however, will be an <em>array</em> of objects in <a href="http://www.json.org/"><strong>JSON</strong> format</a>.</p>
+
+<pre><code class="JSON">[{
+&quot;event_id&quot;: &quot;11_5_2015&quot;,
+&quot;event_name&quot;: &quot;Dominion Power&quot;,
+&quot;semester&quot;: &quot;Fall&quot;,
+&quot;year&quot;: &quot;2015&quot;,
+&quot;total&quot;: &quot;126&quot;,
+&quot;total_new&quot;: &quot;3&quot;
+}]
+</code></pre>
+
+<p><strong>Response Fields</strong></p>
+
+<p>These are fields (or keys) found in each item returned:</p>
+
+<ul>
+<li><strong>event_id</strong> An event's identifier</li>
+<li><strong>event_name</strong> Name of host company for this event</li>
+<li><strong>semester</strong> Semester in which this event occurred</li>
+<li><strong>year</strong> Year in which this event occurred</li>
+<li><strong>total</strong> Total # of students at this event</li>
+<li><strong>total_new</strong> Total # of students not previously in the database at this event</li>
+</ul>
+
+<p><strong>Identifiers</strong> Events have a unique identifier, or ID, based on the exact date in which they occurred. They are in the form of <strong>month</strong>_<strong>day</strong>_<strong>fullYear</strong>. An example is shown below for an event having occurred on the <em>25th of December, 2014</em>:</p>
+
+<pre><code>12_25_2014
+</code></pre>
+
+<p>Below is an example of an API request for an event with a specific name. <em>Note</em> that when an event <em>name</em> is specified and not its <em>ID</em>, the API tries to guess the specific event, if more than one event entry is matched, all entries are returned:</p>
+
+<pre><code>http://mind.cnuapps.me/api/v1/context/events/eventname/lockheed%20martin
+</code></pre>
+
+<p>If, however, an <em>ID</em> or an <em>ID</em> <strong>and</strong> an event <em>name</em> are specified, the single event matched is still returned in an array:</p>
+
+<pre><code>http://mind.cnuapps.me/api/v1/context/events/eventname/lockheed%20martin/eventid/10_1_2015
+</code></pre>
+
+<p>The above example would yield the result below:</p>
+
+<pre><code class="JSON">[{&quot;event_id&quot;:&quot;10_1_2015&quot;,&quot;event_name&quot;:&quot;Lockheed Martin&quot;,&quot;semester&quot;:&quot;fall&quot;,&quot;year&quot;:&quot;2015&quot;,&quot;total&quot;:135,&quot;total_new&quot;:7}]
+</code></pre>
+
+<p>Note that you can expand your query even further by specifying an event year, and semester in which it occurred. This is useful if you are searching for an event in particular but do not know its name or identifier:</p>
+
+<pre><code>http://mind.cnuapps.me/api/v1/context/events/semester/fall/year/2015
+</code></pre>
+
+<p><strong>Supported semester values</strong> are:</p>
+
+<ul>
+<li>fall</li>
+<li>spring</li>
+<li>summer</li>
+</ul>
+
+<p>A <em>fall</em> event covers the months from <em>August</em> until <em>December</em>.</p>
+
+<p>A <em>spring</em> event covers the months from <em>January</em> until <em>May</em>.</p>
+
+<p>And a <em>summer</em> event covers the months <em>June</em> and <em>July</em>.</p>
+
+<h4 id="contexts-general">Contexts - general</h4>
+
+<p><strong>Response</strong> The server will return a response with mime type <em>text/plain</em>. The response format, however, will be an <em>array</em> of objects in <a href="http://www.json.org/"><strong>JSON</strong> format</a>.</p>
+
+<pre><code class="JSON">[{&quot;event_id&quot;:&quot;10_1_2015&quot;,&quot;event_name&quot;:&quot;Lockheed Martin&quot;,&quot;semester&quot;:&quot;fall&quot;,&quot;year&quot;:&quot;2015&quot;,&quot;id&quot;:&quot;00555555&quot;,&quot;first&quot;:&quot;firstName&quot;,&quot;last&quot;:&quot;lastName&quot;,&quot;major&quot;:&quot;Computer Science&quot;,&quot;email&quot;:&quot;firstName.lastName@cnu.edu&quot;,&quot;since&quot;:&quot;8_25_15&quot;}]
+</code></pre>
+
+<p><strong>Relationship</strong> Because this context is a <em>many to many</em> relationship between <em>events</em> and <em>students</em>, every response will contain fields from both an <em>events</em> context and <em>student</em> context. Responses may contain objects sharing exact information for events, or students, or both, depending on the type of parameters passed. Below is an example of a request for all events where students with the last name <em>Anderson</em> attended:</p>
+
+<pre><code>http://mind.cnuapps.me/api/v1/context/general/last/anderson
+</code></pre>
+
+<p>Both event data and student data will repeat across multiple items returned, as more than one student with a last name of <em>Anderson</em> attended more than one event.</p>
+
+<h3 id="parameters">Parameters</h3>
+
+<p>URL parameters are <em>not case sensitive</em> and can be mixed and matched in any order. Below is a breakdown of each one. <em>Note</em> that context does not matter for the type of parameters you can use:</p>
+
+<p><strong>Supported API URL parameters</strong> are listed below:</p>
+
+<ul>
+<li><p><strong>email</strong> A student's CNU email</p></li>
+<li><p><strong>first</strong> A student's first name</p></li>
+<li><p><strong>gradyear</strong> A student's graduation year</p></li>
+<li><p><strong>id</strong> A student's CNU ID</p></li>
+<li><p><strong>last</strong> A student's last name</p></li>
+<li><p><strong>major</strong> A student's major (Estimated)</p></li>
+<li><p><strong>eventid</strong> An event's unique identifier</p></li>
+<li><p><strong>eventname</strong> Name of event / host company (Estimated)</p></li>
+<li><p><strong>semester</strong> Semester an event occurred</p></li>
+<li><p><strong>year</strong> Year an event occurred</p></li>
+</ul>
+
+<p><strong>Note</strong> (Estimated) fields mean that their value can be an ambiguous string. Because of this, entries most closely matching the value entered will be returned. This means either part of the value or all of the value may be specified.</p>
+
+<p><strong>To simply obtain all event or student data</strong> Simply specify the desired <em>context</em> with no extra filter parameters. An example requesting all event records is shown below:</p>
+
+<pre><code>http://mind.cnuapps.me/api/v1/context/events
+</code></pre>
+
+<p><em>Simply</em> replace <em>events</em> with <em>students</em> for a similar result with all student records.</p>
+
+<h3 id="notes">Notes</h3>
+
+<p>This API is a work in progress, and as such, not all data pertaining to the Pizza My Mind database will be available from the start. Instead, data from years prior to the use of a database for registering students at events will be added over time and record accuracy checked in chunks as this project matures. Please be advised about the following temporary limitations:</p>
+
+<ul>
+<li>Individual student records will only available from the Fall semester of the year 2014, until the present (API records are updated in real time when the updated scanner client is used at upcoming events).</li>
+<li>Attendance records for any event will only be available starting from the Fall semester of the year 2015.</li>
+<li>Individual event records will only be available starting from the Fall semester of the year 2015.</li>
+</ul>
+
+<p>The limitations above will decrease (data sets expanded) as more data from previous years and semesters is parsed and added to the database.</p>
+
+<p>If you have any questions, or wish to leave any feedback, <a href="mailto:juan.vallejo.12@cnu.edu">please email me</a>.</p>
+
+</body>
+</html>
