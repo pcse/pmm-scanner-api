@@ -185,15 +185,18 @@ function handleServerStudentRegisterResponse(data) {
 		}
 
 		var extraCredit = 0;
-		var plural = '';
+		var plural = 's';
 		var evtPlural = 's';
 
 		if(data.entries.length >= 8) {
 			extraCredit = 1;
 			if(data.entries.length >= 12) {
-				plural = 's';
 				extraCredit = 3;
 			}
+		}
+
+		if(extraCredit == 1) {
+			plural = '';
 		}
 
 		if(data.entries.length == 1) {
