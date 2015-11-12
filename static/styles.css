@@ -248,8 +248,8 @@ font:200 0.8em 'Helvetica Neue'; color:rgba(255,255,255,0.4); text-shadow:0 1px 
 	width:100%;
 }
 	.panel-content {
-		margin:0px auto 3% auto; 
-		width:500px;
+		margin:70px auto 3% auto; 
+		width: 500px;
 	}
 		.panel-content .editor {
 			width:100%; /*background:rgba(0,0,0,0.29); border:1px solid rgba(0,0,0,0.8); border-radius:7px; box-shadow:0 1px 0 rgba(255,255,255,0.1);*/
