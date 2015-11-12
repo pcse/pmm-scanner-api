@@ -358,7 +358,8 @@ function parseAPIV1Request(request, response, routedReq) {
 		}
 
 		try {
-			response.end(JSON.stringify(rows));
+			var resp = JSON.stringify(rows);
+			response.end([resp]);
 		} catch(e) {
 			respondWithError(response, ERR_API_DB_ERR, ERR_CODE_2_SQL_OUTPUT_NOT_JSON);
 		}

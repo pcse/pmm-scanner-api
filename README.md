@@ -5,6 +5,7 @@ API Documentation
 
 - **Introduction**
 	- API endpoint and format
+- **Authentication**
 - **Contexts**
 	- Contexts - students
 		- Using parameters to search
@@ -35,6 +36,40 @@ The request above, would return all stored *event* data for a student with a stu
 ```
 http://mind.cnuapps.me/api/v1/id/0055555
 ```
+
+###Authentication
+
+In order to obtain results from the database, you must have an **API Key** and an authorized *CNU email*  account.
+
+To verify that your email account has been authorized, and  obtain a key, simply visit the following site, and type your email:
+
+```
+http://mind.cnuapps.me/api/register
+```
+
+Upon verifying your email, an email will be sent to that same account containing your new **API Key**. Should you misplace or forget this *key*, simply visit the same *URL* and type your email. The same *key* will be emailed to you again.
+
+To authenticate requests with the obtained *key*, simply include a *header* in your request with the key of *Authentication* and two segments in the *value*, one named `email` containing your *authorized email address*, and another named `key` containing your unique *key*. An example using *cURL* is shown below:
+
+```sh
+curl http://mind.cnuapps.me/api/v1/context/students/first/nigel --header Authentication: email=firstName.lastName@cnu.edu; key=MY_API_KEY
+```
+
+Try the example above in your console using your *email* and *key*, it should return at least one result.
+
+**Unauthorized requests** Requests that use an invalid email address or key will return a response similar to the one below:
+
+```
+[{"error":true,"message":"Request is not authorized to access the API.","code":-4}]
+```
+
+**Invalid requests** It is important to check a query for incorrect parameters. The API server will *ignore* any *wrong* or *unknown* URL parameters. This means that a request that is *mostly* valid, but has a few *parameters* misspelled or that are nonexistent will query results *as if those parameters had not been there*. The example below demonstrates this:
+
+```
+http://mind.cnuapps.me/api/v1/context/students/incorrectParameter/juan/last/lastName
+```
+
+The result for the *URL* above will *ignore* the parameter with value *incorrectParameter* and return all student records where the *last name* matches *lastName*.
 
 ###Contexts
 
