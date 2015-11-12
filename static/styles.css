@@ -1,5 +1,6 @@
 @import url(https://fonts.googleapis.com/css?family=Poiret+One);
 @import url(https://fonts.googleapis.com/css?family=Open+Sans+Condensed:300);
+@import url(https://fonts.googleapis.com/css?family=Roboto:400,300,500,700);
 
 @font-face {
     font-family: Gabriela;
@@ -32,7 +33,7 @@ body {
 	background-size:cover;
 	color:rgb(85,85,85);
 	float:left;
-	font:400 16px 'Helvetica Neue','Gabriela',arial,sans-serif;
+	font:400 16px 'Helvetica Neue', 'Roboto', 'Gabriela', arial,sans-serif;
 
 }
 
@@ -73,7 +74,7 @@ a {
 
 		.nav-bar-text {
 			color: rgba(255,255,255,0.8);
-			font: 300 1.2em 'Raleway', 'Open Sans Condensed', 'Helvetica Neue';
+			font: 300 1.2em 'Raleway', 'Open Sans Condensed', 'Helvetica Neue', 'Roboto', 'Arial';
 			display: inline-block;
 			vertical-align: middle;
 		}
@@ -164,7 +165,7 @@ a {
 			#brand .logo {
 				color:rgba(255,255,255,0.7);
 				float:left; width:100%; 
-				font:100 3.5em 'Helvetica Neue';
+				font:100 3.5em 'Helvetica Neue', 'Roboto', 'Arial';
 				text-shadow:0 1px 0 rgba(0,0,0,0.1), 0 -1px 0 rgba(255,255,255,0.01);
 			}
 			#brand .tagline {
@@ -185,7 +186,7 @@ a {
 				border-top:1px solid rgba(255,255,255,0.08);
 				color:rgba(255,255,255,0.8);
 				cursor:default;
-				font:400 1.2em 'Gabriela', monospace;
+				font:400 1.2em 'Gabriela', 'Roboto', monospace;
 				height:100%; 
 				min-height:10px;
 				padding:20px;
@@ -199,7 +200,7 @@ a {
 		
 		#out {
 			color:rgba(255,255,255,0.9);
-			font:100 2.5em 'Helvetica Neue';
+			font:100 2.5em 'Helvetica Neue', 'Roboto', 'Arial';
 			font-size:0.78em; text-align:center; width:100%; margin-top:-1%;
 			letter-spacing:1px;
 			margin:30% 0 0 0 ;
@@ -209,7 +210,7 @@ a {
 
 #footer {
 background:rgba(0,0,0,0.57); border-top:1px solid rgba(255,255,255,0.08); border-bottom:0; font-size:0.8em; text-align:center; padding-bottom:0;
-font:200 0.8em 'Helvetica Neue'; color:rgba(255,255,255,0.4); text-shadow:0 1px 0 rgba(0,0,0,0.5); min-height:25%; padding-top:22px;
+font:200 0.8em 'Helvetica Neue', 'Roboto', 'Arial'; color:rgba(255,255,255,0.4); text-shadow:0 1px 0 rgba(0,0,0,0.5); min-height:25%; padding-top:22px;
 }
 	#footer p {
 	/*margin-bottom:10px;*/
@@ -226,7 +227,7 @@ font:200 0.8em 'Helvetica Neue'; color:rgba(255,255,255,0.4); text-shadow:0 1px 
 	.stats .stats-out {
 		background: url(/static/logo.png) no-repeat center center;
 		color:rgba(255,255,255,0.5);
-		font:100 3.8em 'Helvetica Neue';
+		font:100 3.8em 'Helvetica Neue', 'Roboto', 'Arial';
 		height:230px;
 		position:relative;
 		text-align:center;
@@ -262,7 +263,7 @@ font:200 0.8em 'Helvetica Neue'; color:rgba(255,255,255,0.4); text-shadow:0 1px 
 				.panel-content .editor .editor-wrapper .editor-content {
 					border-radius:inherit;
 					color: rgba(255,255,255,0.8);
-					font:300 0.9em 'Helvetica Neue', monospace;
+					font:300 0.9em 'Helvetica Neue', 'Roboto', monospace;
 					line-height:1.7em;
 					position:relative;
 					width:100%;
@@ -285,7 +286,7 @@ font:200 0.8em 'Helvetica Neue'; color:rgba(255,255,255,0.4); text-shadow:0 1px 
 							background:transparent;
 							border:0;
 							color:rgba(255,255,255,1);
-							font:100 3em 'Helvetica Neue';
+							font:100 3em 'Helvetica Neue', 'Roboto', 'Arial';
 							left:50%;
 							margin:-40px 0 0 -300px;
 							padding:0;
