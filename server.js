@@ -358,8 +358,7 @@ function parseAPIV1Request(request, response, routedReq) {
 		}
 
 		try {
-			var resp = JSON.stringify(rows);
-			response.end([resp]);
+			response.end(JSON.stringify(rows));
 		} catch(e) {
 			respondWithError(response, ERR_API_DB_ERR, ERR_CODE_2_SQL_OUTPUT_NOT_JSON);
 		}
@@ -373,7 +372,8 @@ function parseAPIV1Request(request, response, routedReq) {
  */
 function respondWithError(response, error, errorCode) {
 
-	var errObj = {
+	var errObj = [];
+	errObj[0] = {
 		error: true,
 		message: error,
 		code: errorCode
