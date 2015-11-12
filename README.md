@@ -52,10 +52,10 @@ Upon verifying your email, an email will be sent to that same account containing
 To authenticate requests with the obtained *key*, simply include a *header* in your request with the key of *Authentication* and two segments in the *value*, one named `email` containing your *authorized email address*, and another named `key` containing your unique *key*. An example using *cURL* is shown below:
 
 ```sh
-curl http://mind.cnuapps.me/api/v1/context/students/first/nigel --header Authentication: email=firstName.lastName@cnu.edu; key=MY_API_KEY
+curl http://mind.cnuapps.me/api/v1/context/students/last/heddle --header Authentication: email=firstName.lastName@cnu.edu; key=MY_API_KEY
 ```
 
-Try the example above in your console using your *email* and *key*, it should return at least one result.
+Try the example above in your console using your *email*, *key*, and a student's last name. It should return at least one result.
 
 **Unauthorized requests** Requests that use an invalid email address or key will return a response similar to the one below:
 
