@@ -181,11 +181,12 @@ function handleServerStudentRegisterResponse(data) {
 		// if we got this far, we have made a request for student data after receiving
 		// zero event records last time
 		if(data.context == 'students') {
-			return resultsContent.innerHTML = '<h1>Welcome, <span style="color:rgb(189,224,216);font-weight:bold;">' + data.entries[0].first + ' ' + data.entries[0].last + '</span>. You have not been to <span style="color:rgb(189,198,224);font-weight:bold;">any Pizza My Mind events</span> this semester. Come listen to great companies present opportunities they have to offer <span style="color:rgb(224,189,215);font-weight:bold;">Thursdays at 12pm</span>.</h1>';
+			return resultsContent.innerHTML = '<h1>Welcome, <span style="color:rgb(189,224,216);font-weight:bold;">' + data.entries[0].first + ' ' + data.entries[0].last + '</span>. You have not been to <span style="color:rgb(189,198,224);font-weight:bold;">any Pizza My Mind events</span> this semester. Come listen to great companies present opportunities they have to offer <span style="color:rgb(224,189,215);font-weight:bold;">Thursdays at 12:15pm</span> in <span style="color:rgb(189,224,216);font-weight:bold;">Luter 121</span>.</h1>';
 		}
 
 		var extraCredit = 0;
 		var plural = '';
+		var evtPlural = 's';
 
 		if(data.entries.length >= 8) {
 			extraCredit = 1;
@@ -195,7 +196,11 @@ function handleServerStudentRegisterResponse(data) {
 			}
 		}
 
-		resultsContent.innerHTML = '<h1>Welcome, <span style="color:rgb(189,224,216);font-weight:bold;">' + data.entries[0].first + ' ' + data.entries[0].last + '</span>. You have been to <span style="color:rgb(189,198,224);font-weight:bold;">' + data.entries.length + ' events</span> this semester and qualify for <span style="color:rgb(224,189,215);font-weight:bold;">' + extraCredit + ' point' + plural + ' of extra credit</span> in any eligible course.</h1>';
+		if(data.entries.length == 1) {
+			evtPlural = '';
+		}
+
+		resultsContent.innerHTML = '<h1>Welcome, <span style="color:rgb(189,224,216);font-weight:bold;">' + data.entries[0].first + ' ' + data.entries[0].last + '</span>. You have been to <span style="color:rgb(189,198,224);font-weight:bold;">' + data.entries.length + ' event' + evtPlural + '</span> this semester and qualify for <span style="color:rgb(224,189,215);font-weight:bold;">' + extraCredit + ' point' + plural + ' of extra credit</span> in any eligible course.</h1>';
 
 		// draw table
 		var table = document.createElement('table');
