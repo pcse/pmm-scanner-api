@@ -16,10 +16,16 @@ var ERR_NO_MYSQL_CONNECTION 	= "Unable to access the database at this time. Plea
 var ERR_API_INVALID_ENDPOINT 	= "Invalid endpoint. Check your URL and try again. (/api/v1/key/value)";
 var ERR_API_MISSING_CONTEXT 	= "A valid context is required. Please edit your request to include (/context/[students|events])";
 var ERR_API_DB_ERR 				= "Server error, it's not you, it's me. Please report this to juan.vallejo.12@cnu.edu.";
+var ERR_API_UNAUTHORIZED 		= "Request is not authorized to access the API.";
+var ERR_API_USER_NOT_ACTIVE 	= "Request is not authorized. API access for this email is not enabled.";
+var ERR_FILEIO_404 				= "404. The page you are looking for cannot be found.";
 
 var ERR_CODE_1_SQL_ERR 				= -1;
 var ERR_CODE_2_SQL_OUTPUT_NOT_JSON 	= -2;
 var ERR_CODE_SQL_DISCONNECTED 		= -3;
+var ERR_CODE_API_UNAUTHORIZED 		= -4;
+var ERR_CODE_API_USER_NOT_ACTIVE 	= -5;
+var ERR_CODE_FILEIO_404 			= -6;
 
 var fs 		= require('fs');
 var socket 	= require('socket.io');
@@ -32,8 +38,19 @@ var mysql   = require('mysql').createConnection({
 	database: 'pmm'
 });
 
+var Hashids = require('hashids');
+var emailjs = require('emailjs');
+var emailServer = emailjs.server.connect({
+	user: 'cnuapps.me@gmail.com',
+	password: 'cnuapps2016',
+	host: 'smtp.gmail.com',
+	tls: true,
+	port: 587
+});
+
 var requestRouter = {
-	'/': 'index.html'
+	'/': 'index.html',
+	'/api/register': 'index.html'
 };
 
 var requestDefs = {
@@ -88,34 +105,104 @@ var httpServer = http.createServer(function(request, response) {
 
 	var routedReq = requestRouter[request.url] || request.url;
 
+	var extension = routedReq.split('.');
+	extension = extension.length ? extension[extension.length - 1] : null;
+
 	// parse client requests
-	if(requestDefs[routedReq] && requestDefs[routedReq].type == 'FILE') {
-		return fs.readFile(__dirname + '/' + routedReq, function(err, data) {
+	// assume api request
+	if(routedReq.match(/\/api\/v1\/.*/gi)) {
+
+		authenticateAPIRequest(request, response, routedReq, function(err, request, response, routedReq) {
 			if(err) {
-				return console.log('HTTP', 'FS', err);
+				return respondWithError(response, ERR_API_UNAUTHORIZED, ERR_CODE_API_UNAUTHORIZED);
+			}
+			parseAPIV1Request(request, response, routedReq);
+		});
+
+	} else if(routedReq.match(/\/api\/.*/gi) && !routedReq.match(/\/api\/register\/.*/gi)) {
+		respondWithError(response, ERR_API_INVALID_ENDPOINT);
+	} else {
+
+		var pathToFile = routedReq;
+
+		if(routedReq.match(/\/api\/register\/.*/gi)) {
+			pathToFile = requestRouter['/api/register'];
+		}
+
+		return fs.readFile(__dirname + '/' + pathToFile, function(err, data) {
+
+			if(err) {
+				console.log('SERVER', 'HTTP', '404', err);
+				return response.end(ERR_FILEIO_404);
 			}
 
-			var mime = typeDefs[requestDefs[routedReq].mime];
-			if(!mime) {
-				var ext = routedReq.split('.');
-				ext 	= ext[ext.length - 1];
-				mime 	= typeDefs[ext] || typeDefs['txt'];
-			}
+			var mime = typeDefs[extension];
 
 			response.writeHead(200, {'Content-Type': mime});
 			response.end(data);
 		});
-	}
 
-	// assume api request
-	if(routedReq.match(/\/api\/v1\/.*/gi)) {
-		parseAPIV1Request(request, response, routedReq);
-	} else {
-		response.end("Invalid endpoint.");
 	}
 
 }).listen(APP_MAIN_PORT, APP_MAIN_HOST);
 
+/**
+ * Checks to see if requets to the API
+ */
+function authenticateAPIRequest(request, response, routedReq, callback) {
+
+	var authHeader = request.headers.authentication;
+
+	if(!authHeader) {
+		if(callback && typeof callback == 'function') {
+			return callback.call(this, true, request, response, routedReq);
+		}
+
+		return respondWithError(response, ERR_API_UNAUTHORIZED, ERR_CODE_API_UNAUTHORIZED);
+	}
+
+	var authHeaderTokens = authHeader.split(';');
+	var headerTokens = {};
+
+	if(authHeader && authHeaderTokens.length) {
+
+		for(var i = 0; i < authHeaderTokens.length; i++) {
+		
+			var keyVal = authHeaderTokens[i].split('=');
+
+			if(keyVal.length) {
+				var key = keyVal[0].replace(/\ /gi, '');
+				var val = keyVal[1].replace(/\ /gi, '');
+				headerTokens[key] = val;
+			}
+
+		}
+
+	}
+
+	mysql.query('SELECT propValue, isActive, hashKey FROM `metadata` WHERE property="api_user"', function(err, rows) {
+
+		if(err) {
+			return console.log('SERVER', 'API', 'MYSQL', 'AUTH', err);
+		}
+
+		var ERR_NOT_AUTH = true;
+
+		if(rows.length && rows[0].propValue && rows[0].hashKey && rows[0].propValue == headerTokens.email && rows[0].hashKey == headerTokens.key) {
+			if(!rows[0].isActive) {
+				respondWithError(response, ERR_API_USER_NOT_ACTIVE, ERR_CODE_API_USER_NOT_ACTIVE);
+			} else {
+				ERR_NOT_AUTH = false;
+			}
+		}
+
+		if(callback && typeof callback == 'function') {
+			callback.call(this, ERR_NOT_AUTH, request, response, routedReq);
+		}
+
+	});
+
+}
 
 /**
  * Requires a database connection. Will return an error string
@@ -291,7 +378,7 @@ function respondWithError(response, error, errorCode) {
 		code: errorCode
 	}
 
-	response.writeHead(errorCode || 500);
+	response.writeHead(500, {'Content-Type': 'application/json'});
 	response.end(JSON.stringify(errObj));
 
 }
@@ -394,6 +481,178 @@ function initSocketListener() {
 		client.on('attendancedata', function(data) {
 			syncDatabases(data, client);
 		});
+
+		/**
+		 * Handle GUI events
+		 */
+		 
+		 // handle student registration
+		 client.on('registerapistudentid', function(clientData) {
+
+		 	if(clientData.context == 'students') {
+		 		return mysql.query('SELECT * FROM `students` WHERE student_id = "' + clientData.id + '"', function(err, rows) {
+		 			if(err) {
+		 				client.emit('registerapistudentidresponse', {
+				 			entries: [],
+				 			error: true,
+				 			message: err.toString()
+				 		});
+		 				return console.log('SERVER', 'CLIENT', 'MYSQL', err);
+		 			}
+
+		 			client.emit('registerapistudentidresponse', {
+	 					entries: rows,
+	 					id: clientData.id,
+	 					context: clientData.context
+	 				});
+
+		 		});
+		 	}
+
+		 	var request = http.request({
+		 		host: 'pmm-rubyserverapps.rhcloud.com',
+		 		path: '/api/v1/context/' + (clientData.context || 'general') + '/id/' + clientData.id,
+		 		method: 'GET',
+		 		headers: {
+		 			'Authentication': 'email=juan.vallejo.12@cnu.edu; key=eOKpAJgR3'
+		 		}
+
+		 	}, function(response) {
+
+		 		var data = '';
+
+		 		response.on('data', function(chunk) {
+		 			data += chunk;
+		 		});
+
+		 		response.on('end', function() {
+
+		 			try {
+		 				client.emit('registerapistudentidresponse', {
+		 					entries: JSON.parse(data),
+		 					id: clientData.id,
+		 					context: clientData.context
+		 				});
+		 			} catch(e) {
+		 				console.log('SERVER', 'CLIENT', 'HTTP', 'JSON->parse', e);
+		 			}
+
+		 		});
+
+		 	});
+
+		 	request.end();
+
+		 	request.on('error', function(err) {
+		 		console.log('SERVER', 'CLIENT', 'HTTP', 'ERR', err);
+		 		client.emit('registerapistudentidresponse', {
+		 			entries: [],
+		 			error: true,
+		 			message: err.toString()
+		 		});
+		 	});
+
+		 });
+
+		 // handle email registration
+		 client.on('registerapiemail', function(data) {
+		 	
+		 	mysql.query('SELECT propValue AS email, isActive, hashKey FROM `metadata` WHERE property="api_user" AND propValue="' + data.email + '"', function(err, rows) {
+
+		 		if(err) {
+		 			client.emit('registerapiemailresponse', {
+		 				error: true,
+		 				unauthorized: false,
+		 				email: data.email,
+		 				entry: null
+		 			});
+		 			return console.log('SERVER', 'API', 'REGISTER', err);
+		 		}
+
+		 		if(!rows.length) {
+		 			return client.emit('registerapiemailresponse', {
+		 				error: true,
+		 				unauthorized: true,
+		 				email: data.email,
+		 				entry: null
+		 			});
+		 		}
+
+		 		// generate new hash key
+		 		var hash = new Hashids(data.email);
+		 		hash = hash.encode(Date.now());
+
+		 		// if entry isActive, email out existing hashKey
+		 		if(rows[0].isActive) {
+
+		 			hash = rows[0].hashKey;
+
+		 			client.emit('registerapiemailresponse', {
+		 				entry: rows[0]
+		 			});
+
+		 			console.log('SERVER', 'API', 'REGISTER', 'Failed to register entry with email', data.email, '. Entry already registered.');
+
+		 			var emailText = 'Thank you for requesting access to the Pizza My Mind API\n';
+			 		emailText += 'You are receiving this email as a reminder of your Pizza My Mind API key.\n\n';
+			 		emailText += 'Please take note of the API key below, you will need it';
+			 		emailText += ' in order to authenticate requests with the API server.\n\n';
+			 		emailText += 'Your API key is "' + hash + '"\n\n';
+			 		emailText += 'For instructions on how to use this key to request data from the API, please consult';
+			 		emailText += ' the Pizza My Mind API Server documentation: https://github.com/juanvallejo/pcse-scanner-api/blob/master/README.md\n\n';
+			 		emailText += 'Juan';
+
+		 		} else {
+
+		 			var emailText = 'You are receiving this email because you requested access to the Pizza My Mind API';
+			 		emailText += ' and your email address is eligible for access. Please take note of the API key below, you will need it';
+			 		emailText += ' in order to authenticate requests with the API server.\n\n';
+			 		emailText += 'Your API key is "' + hash + '"\n\n';
+			 		emailText += 'For instructions on how to use this key to request data from the API, please consult';
+			 		emailText += ' the Pizza My Mind API Server documentation: https://github.com/juanvallejo/pcse-scanner-api/blob/master/README.md\n\n';
+			 		emailText += 'Juan';
+
+		 		}
+
+		 		// if entry is not active, create new hash, update database to have it,
+		 		// set entry as active in the database, and email out the hashKey
+		 		// if we got this far, assume what was jsut typed is true
+		 		emailServer.send({
+		 			text: emailText,
+		 			from: 'Pizza My Mind API <cnuapps.me@gmail.com>',
+		 			to: data.email,
+		 			subject: 'CNU Pizza My Mind API Request'
+		 		}, function(err, message) {
+
+		 			if(err) {
+		 				client.emit('registerapiemailresponse', {
+			 				error: true,
+			 				unauthorized: false,
+			 				email: data.email,
+			 				entry: null
+			 			});
+		 				return console.log('SERVER', 'API', 'REGISTER', 'EMAIL', err);
+		 			}
+
+		 			console.log('SERVER', 'API', 'REGISTER', 'Email sent to', data.email, 'with API key', hash);
+
+		 			mysql.query('UPDATE `metadata` SET isActive="1", hashKey="' + hash + '" WHERE property="api_user" AND propValue="' + data.email +'"', function(err) {
+		 				if(err) {
+		 					return console.log('SERVER', 'API', 'REGISTER', 'ERROR', err);
+		 				}
+
+		 				console.log('SERVER', 'API', 'REGISTER', 'UPDATE->hashKey', hash);
+		 			});
+
+		 			client.emit('registerapiemailresponse', {
+		 				entry: rows[0],
+		 				newHash: hash
+		 			});
+
+		 		});
+
+		 	});
+		 });
 
 		/**
 		 * Received when a student registers with the client

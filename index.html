@@ -1,20 +1,309 @@
 <!doctype html>
+<html lang="en-us">
 <head>
-<meta charset="utf-8"/>
-	<title>Test Application</title>
+<meta charset="utf-8" />
+<title>Request API Access</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.4.0/css/font-awesome.css" />
+<link rel="stylesheet" href="/static/reset.css"/>
+<link rel="stylesheet" href="/static/styles.css"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/randomcolor/0.4.1/randomColor.js"></script>
 <script src="/socket.io/socket.io.js"></script>
-</head>
-<body>
 <script>
 var serverURL = 'https://pmm-rubyserverapps.rhcloud.com:8443';
+var socket = null;
+
 if(window.location.hostname == 'localhost') {
 	serverURL = 'http://localhost:7777';
 }
 
 try {
-	var socket = io.connect(serverURL);
+	socket = io.connect(serverURL);
 } catch(e) {
 	console.log('Error connecting to server.');
+}
+
+if(socket) {
+	socket.on('registerapiemailresponse', function(data) {
+		handleServerEmailRegisterResponse(data);
+	});
+
+	socket.on('registerapistudentidresponse', function(data) {
+		handleServerStudentRegisterResponse(data);
+	});
+}
+</script>
+</head>
+<body>
+<div id="main-panel" class="panel">
+	<div class="fx-shadow-overlay"></div><!--#fx-shadow-overlay-->
+	<div class="wrapper">
+		<div id="brand">
+			<!-- <p class="logo">Scan Your ID</p>
+			<p class="tagline">Please scan your ID to continue</p> -->
+		</div><!--#brand-->
+
+		<div class="stats" id="stats1">
+			<div class="stats-out" id="stats1Out"></div><!--.stats-out-->
+		</div><!--.circle-->
+
+		<div class="panel-content">
+			<div class="editor">
+				<div class="editor-wrapper">
+					<div class="editor-content Bloom-colorize">
+						<!-- <div id="sid"></div> -->
+						<input type="text" placeholder="Type your ID" id="sid-input" />
+					</div><!--.editor-content-->
+				</div><!--.editor-wrapper-->
+			</div><!--.editor-->
+		</div><!--.panel-content-->
+
+		<div id="out">Made with &lt;3 for the PCSE department</div>
+
+	</div><!--#home-page-->
+
+</div><!--#main-panel-->
+
+<div class="panel" id="results-panel">
+	<div class="nav-bar">
+		<div class="nav-bar-logo"></div>
+		<div class="nav-bar-text">Pizza My Mind API</div>
+		<div class="nav-bar-exit" id="close-button"><span class="fa fa-close fa-lg"></span></div>
+	</div><!--.nav-bar -->
+	<div class="wrapper">
+		<div class="panel-content">
+			<div class="editor">
+				<div class="editor-wrapper">
+					<div class="editor-content" id="results-content">
+						Loading, please wait....
+					</div><!--.editor-content-->
+				</div><!--.editor-wrapper-->
+			</div><!--.editor-->
+		</div><!--.panel-content-->
+	</div><!--.wrapper-->
+</div><!--.panel-->
+<div id="overlay"></div><!--#overlay-->
+<script>
+var DEFAULT_MAIN_OUTPUT_PLACEHOLDER = 'Enter your email';
+
+var closeButton = document.getElementById('close-button');
+
+var mainInput = document.getElementById('sid-input');
+var mainOutput = document.getElementById('out');
+var urlPieces = window.location.href.split('/api/');
+
+var resultsPage = document.getElementById('results-panel');
+var resultsContent = document.getElementById('results-content');
+var homePage = document.getElementById('main-panel');
+
+var isMainPage = true;
+
+// focus main input
+if(mainInput) {
+	mainInput.focus();
+	mainInput.addEventListener('keypress', function(e) {
+		handleKeypress(e.keyCode);
+	});
+}
+
+if(urlPieces.length && urlPieces[1] && urlPieces[1].split('/')[0] == 'register') {
+	isMainPage = false;
+	handleRegistrationView();
+} else {
+	handleMainView();
+}
+
+if(isMainPage) {
+	DEFAULT_MAIN_OUTPUT_PLACEHOLDER = 'Enter your student ID';
+}
+
+if(closeButton) {
+	closeButton.addEventListener('click', function() {
+		showHomePage();
+	});
+}
+
+// determine if url parameters are being used
+var params = urlPieces[1] ? urlPieces[1].split('/') : [];
+
+if(!isMainPage && params[1] == 'email' && params[2]) {
+	showRegisterResultsPage(params[2]);
+}
+
+function handleRegistrationView() {
+	
+	if(!mainInput || !mainOutput) {
+		return;
+	}
+	
+	mainInput.placeholder = 'Enter your email';
+	mainOutput.innerHTML = 'Press ENTER To continue signing up';
+}
+
+function handleMainView() {
+
+}
+
+function showRegisterResultsPage(email) {
+
+	mainInput.placeholder = DEFAULT_MAIN_OUTPUT_PLACEHOLDER;
+	homePage.style.display = 'none';
+	resultsPage.style.display = 'block';
+	resultsContent.innerHTML = 'Loading, please wait...';
+
+	if(socket) {
+		socket.emit('registerapiemail', {
+			email: email
+		});
+	
+	}
+}
+
+function showHomeResultsPage(studentId) {
+
+	mainInput.placeholder = DEFAULT_MAIN_OUTPUT_PLACEHOLDER;
+	homePage.style.display = 'none';
+	resultsPage.style.display = 'block';
+	resultsContent.innerHTML = 'Loading, please wait...';
+
+	if(socket) {
+		socket.emit('registerapistudentid', {
+			id: studentId,
+			context: 'general'
+		});
+	
+	}
+}
+
+function handleServerStudentRegisterResponse(data) {
+
+	if(data.entries.length) {
+
+		// if we got this far, we have made a request for student data after receiving
+		// zero event records last time
+		if(data.context == 'students') {
+			return resultsContent.innerHTML = '<h1>Welcome, <span style="color:rgb(189,224,216);font-weight:bold;">' + data.entries[0].first + ' ' + data.entries[0].last + '</span>. You have not been to <span style="color:rgb(189,198,224);font-weight:bold;">any Pizza My Mind events</span> this semester. Come listen to great companies present opportunities they have to offer <span style="color:rgb(224,189,215);font-weight:bold;">Thursdays at 12pm</span>.</h1>';
+		}
+
+		var extraCredit = 0;
+		var plural = '';
+
+		if(data.entries.length >= 8) {
+			extraCredit = 1;
+			if(data.entries.length >= 12) {
+				plural = 's';
+				extraCredit = 3;
+			}
+		}
+
+		resultsContent.innerHTML = '<h1>Welcome, <span style="color:rgb(189,224,216);font-weight:bold;">' + data.entries[0].first + ' ' + data.entries[0].last + '</span>. You have been to <span style="color:rgb(189,198,224);font-weight:bold;">' + data.entries.length + ' events</span> this semester and qualify for <span style="color:rgb(224,189,215);font-weight:bold;">' + extraCredit + ' point' + plural + ' of extra credit</span> in any eligible course.</h1>';
+
+		// draw table
+		var table = document.createElement('table');
+		table.className = 'events-table';
+		table.border = '0';
+
+		for(var i = 0; i < data.entries.length; i++) {
+			var tr = document.createElement('tr');
+			var color = randomColor({
+				luminosity: 'light',
+				hue: 'blue'
+			});
+			tr.innerHTML = '<td style="color:' + color + ';">' + tableIdToDate(data.entries[i].event_id) + '</td>';
+			tr.innerHTML += '<td style="text-align:right;color:' + color + ';">' + data.entries[i].event_name + '</td>';
+			table.appendChild(tr);
+		}
+
+		resultsContent.appendChild(table);
+
+		function tableIdToDate(id) {
+			return id.replace(/\_/gi, '\/');
+		}
+
+	} else if(data.context != 'students') {
+		// get student data
+		socket.emit('registerapistudentid', {
+			id: data.id,
+			context: 'students'
+		});
+	} else {
+		// if we have made it this far, the student is not
+		// in the database
+		resultsContent.innerHTML = '<h1>Hey there, you have not yet shown up to any Pizza My Mind events. Come listen to <span style="color:rgb(189,198,224);font-weight:bold;">great companies</span> <span style="color:rgb(189,224,216);font-weight:bold;">present unique opportunities</span> to students <span style="color:rgb(224,189,215);font-weight:bold;">Thursdays at 12pm</span>.</h1>';
+	}
+}
+
+function handleServerEmailRegisterResponse(data) {
+
+	if(data.error && data.unauthorized) {
+		return resultsContent.innerHTML = 'You do not have permission to request access to this API. Please contact <a href="mailto:clarem@cnu.edu">Clare Maliniak</a> for more information.';
+	}
+
+	if(data.error && !data.unauthorized) {
+		return resultsContent.innerHTML = 'An error occurred processing your request. Don\'t worry, it\'s not your fault! Please try again later.';
+	}
+
+	// email is authorized, exists in database
+	// but is already active, email out key
+	if(data.entry && data.entry.isActive && data.entry.hashKey) {
+		return resultsContent.innerHTML = 'You have already requested access to this API. Please check your email. Your existing key has been sent to you.';
+	}
+
+	// email is authorized, exists in database
+	// is not active, get hash returned by the server
+	resultsContent.innerHTML = 'Thank you for your interest in creating with the Pizza Mind API.<br /><br />';
+	resultsContent.innerHTML += 'An email has been sent to you containing your access key.<br />';
+	resultsContent.innerHTML += 'To use the API, simply send an "Authentication" header with your request, containing the value "email=YOUR_EMAIL; key=KEY_HASH_EMAILED_TO_YOU"';
+}
+
+function showHomePage() {
+
+	resultsPage.style.display = 'none';
+	homePage.style.display = 'block';
+
+	if(mainInput) {
+		mainInput.placeholder = DEFAULT_MAIN_OUTPUT_PLACEHOLDER;
+		mainInput.focus();
+	}
+}
+
+function handleKeypress(key) {
+
+	if(key == 13) {
+
+		if(!mainInput || mainInput.value == '') {
+			return;
+		}
+
+		if(!isMainPage) {
+
+			var cnuEmail = mainInput.value;
+
+			if(!mainInput.value.match(/^[a-z\-\_\.]+(\.[0-9]+)*\@(cnu\.edu)$/gi)) {
+				mainInput.value = '';
+				mainInput.placeholder = 'Enter a valid CNU email';
+				return;
+			}
+
+			mainInput.value = '';
+			mainInput.placeholder = 'Loading, please wait...';
+
+			return showRegisterResultsPage(cnuEmail);
+		}
+
+		var studentId = mainInput.value;
+
+		// assume we are submitting student ID
+		if(!mainInput.value.match(/^(00|000)[1-9]{5,6}$/gi)) {
+			mainInput.value = '';
+			mainInput.placeholder = 'Please enter a valid ID';
+			return;
+		}
+
+		mainInput.value = '';
+		mainInput.placeholder = 'Loading, please wait...';
+
+		return showHomeResultsPage(studentId);
+	}
 }
 </script>
 </body>
