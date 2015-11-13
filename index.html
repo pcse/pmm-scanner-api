@@ -302,7 +302,7 @@ function handleKeypress(key) {
 		var studentId = mainInput.value;
 
 		// assume we are submitting student ID
-		if(!mainInput.value.match(/^(00|000)[0-9]{5,6}$/gi)) {
+		if(!mainInput.value.match(/^(0*)[0-9]{5,8}$/gi)) {
 			mainInput.value = '';
 			mainInput.placeholder = 'Please enter a valid ID';
 			return;
