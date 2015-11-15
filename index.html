@@ -177,6 +177,11 @@ function showHomeResultsPage(studentId) {
 
 function handleServerStudentRegisterResponse(data) {
 
+	// replace table id underscores with slashes
+	function tableIdToDate(id) {
+		return id.replace(/\_/gi, '\/');
+	}
+
 	if(data.entries.length) {
 
 		// if we got this far, we have made a request for student data after receiving
@@ -223,10 +228,6 @@ function handleServerStudentRegisterResponse(data) {
 		}
 
 		resultsContent.appendChild(table);
-
-		function tableIdToDate(id) {
-			return id.replace(/\_/gi, '\/');
-		}
 
 	} else if(data.context != 'students') {
 		// get student data
