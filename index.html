@@ -96,7 +96,7 @@ var resultsPage = document.getElementById('results-panel');
 var resultsContent = document.getElementById('results-content');
 var homePage = document.getElementById('main-panel');
 
-var isMainPage = true;
+var isMainPage = false;
 
 // focus main input
 if(mainInput) {
@@ -106,12 +106,8 @@ if(mainInput) {
 	});
 }
 
-if(urlPieces.length && urlPieces[1] && urlPieces[1].split('/')[0] == 'register') {
-	isMainPage = false;
-	handleRegistrationView();
-} else {
-	handleMainView();
-}
+// handle views based on URL
+handleURL(urlPieces);
 
 if(isMainPage) {
 	DEFAULT_MAIN_OUTPUT_PLACEHOLDER = 'Enter your student ID';
@@ -130,6 +126,22 @@ if(!isMainPage && params[1] == 'email' && params[2]) {
 	showRegisterResultsPage(params[2]);
 }
 
+function handleURL(urlPieces) {
+
+	isMainPage = false;
+	var path = urlPieces.length && urlPieces[1] && urlPieces[1].split('/')[0];
+	
+	if(path == 'register') {
+		handleRegistrationView();
+	} else if(path == 'clare') {
+		handleAdminView();
+	} else {
+		isMainPage = true;
+		handleMainView();
+	}
+
+}
+
 function handleRegistrationView() {
 	
 	if(!mainInput || !mainOutput) {
@@ -139,6 +151,10 @@ function handleRegistrationView() {
 	mainInput.placeholder = 'Enter your email';
 	mainOutput.innerHTML = 'Press ENTER To continue signing up';
 }
+
+function handleAdminView() {
+
+} 
 
 function handleMainView() {
 
@@ -194,7 +210,7 @@ function handleServerStudentRegisterResponse(data) {
 		// if we got this far, we have made a request for student data after receiving
 		// zero event records last time
 		if(data.context == 'students') {
-			return resultsContent.innerHTML = '<h1>Welcome, <span style="color:rgb(189,224,216);font-weight:bold;">' + fullName + '</span>. You have not been to <span style="color:rgb(189,198,224);font-weight:bold;">any Pizza My Mind events</span> this semester. Come listen to great companies present opportunities they have to offer <span style="color:rgb(224,189,215);font-weight:bold;">Thursdays at 12:15pm</span> in <span style="color:rgb(189,224,216);font-weight:bold;">Luter 121</span>.</h1>';
+			return resultsContent.innerHTML = '<h1>Welcome, you have not been to <span style="color:rgb(189,198,224);font-weight:bold;">any Pizza My Mind events</span> this semester. Come listen to great companies present opportunities they have to offer <span style="color:rgb(224,189,215);font-weight:bold;">Thursdays at 12:15pm</span> in <span style="color:rgb(189,224,216);font-weight:bold;">Luter 121</span>.</h1>';
 		}
 
 		var extraCredit = 0;
@@ -216,7 +232,7 @@ function handleServerStudentRegisterResponse(data) {
 			evtPlural = '';
 		}
 
-		resultsContent.innerHTML = '<h1>Welcome, <span style="color:rgb(189,224,216);font-weight:bold;">' + fullName + '</span>. You have been to <span style="color:rgb(189,198,224);font-weight:bold;">' + data.entries.length + ' event' + evtPlural + '</span> this semester and qualify for <span style="color:rgb(224,189,215);font-weight:bold;">' + extraCredit + ' point' + plural + ' of extra credit</span> in any eligible course.</h1>';
+		resultsContent.innerHTML = '<h1>Welcome, you have been to <span style="color:rgb(189,198,224);font-weight:bold;">' + data.entries.length + ' event' + evtPlural + '</span> this semester and qualify for <span style="color:rgb(224,189,215);font-weight:bold;">' + extraCredit + ' point' + plural + ' of extra credit</span> in any eligible course.</h1>';
 
 		// draw table
 		var table = document.createElement('table');
@@ -237,7 +253,10 @@ function handleServerStudentRegisterResponse(data) {
 		resultsContent.appendChild(table);
 
 	} else if(data.context != 'students') {
-		// get student data
+		// get student data if we received no
+		// data initially and we still wish to
+		// receive student information with no
+		// events->students relationship
 		socket.emit('registerapistudentid', {
 			id: data.id,
 			context: 'students'
@@ -245,7 +264,7 @@ function handleServerStudentRegisterResponse(data) {
 	} else {
 		// if we have made it this far, the student is not
 		// in the database
-		resultsContent.innerHTML = '<h1>Hey there, you have not yet shown up to any Pizza My Mind events. Come listen to <span style="color:rgb(189,198,224);font-weight:bold;">great companies</span> <span style="color:rgb(189,224,216);font-weight:bold;">present unique opportunities</span> to students <span style="color:rgb(224,189,215);font-weight:bold;">Thursdays at 12pm</span>.</h1>';
+		resultsContent.innerHTML = '<h1>Hey there, you have not yet shown up to any Pizza My Mind events. Come listen to <span style="color:rgb(189,198,224);font-weight:bold;">great companies</span> <span style="color:rgb(189,224,216);font-weight:bold;">present unique opportunities</span> to students <span style="color:rgb(224,189,215);font-weight:bold;">Thursdays at 12:20pm</span> in <span style="color:rgb(189,224,216);font-weight:bold;">Luter 121</span>.</h1>';
 	}
 }
 
