@@ -216,6 +216,11 @@ font:200 0.8em 'Helvetica Neue', 'Roboto', 'Arial'; color:rgba(255,255,255,0.4);
 	/*margin-bottom:10px;*/
 	}
 
+.events-last-updated {
+	font-size: 0.8em;
+	margin: 50px 0 0 0;
+}
+
 .stats {
 	background:transparent;
 	background-size:230px;

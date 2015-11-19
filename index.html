@@ -36,6 +36,10 @@ if(socket) {
 	socket.on('registerapiauthadminresponse', function(data) {
 		handleServerAdminRegisterResponse(data);
 	});
+
+	socket.on('registerapistudentidlastupdatedresponse', function(data) {
+		handleStudentRegisterLastUpdatedResponse(data);
+	});
 }
 </script>
 </head>
@@ -319,6 +323,31 @@ function handleServerAdminRegisterResponse(data) {
 	console.log(data);
 }
 
+/**
+ * Called once the client returns database update data
+ * Should only be called once per results page
+ */
+function handleStudentRegisterLastUpdatedResponse(data) {
+
+	if(!data.timestamp) {
+		return
+	}
+
+	// convert timestamp to date
+	var date = new Date(parseInt(data.timestamp));
+
+	// last updated div
+	var divLastUpdated = document.createElement('div');
+	divLastUpdated.className = 'events-last-updated';
+	divLastUpdated.innerHTML = 'Event data last updated on ' + (date.getMonth() + 1) + '/' + date.getDate() + '/' + date.getFullYear();
+	resultsContent.appendChild(divLastUpdated);
+
+}
+
+/**
+ * Called once server responds with event data for the current
+ * student ID.
+ */
 function handleServerStudentRegisterResponse(data) {
 
 	// replace table id underscores with slashes
@@ -362,6 +391,7 @@ function handleServerStudentRegisterResponse(data) {
 
 		resultsContent.innerHTML = '<h1>Welcome, you have been to <span style="color:rgb(189,198,224);font-weight:bold;">' + data.entries.length + ' event' + evtPlural + '</span> this semester and qualify for <span style="color:rgb(224,189,215);font-weight:bold;">' + extraCredit + ' point' + plural + ' of extra credit</span> in any eligible course.</h1>';
 
+
 		// draw table
 		var table = document.createElement('table');
 		table.className = 'events-table';
@@ -379,6 +409,9 @@ function handleServerStudentRegisterResponse(data) {
 		}
 
 		resultsContent.appendChild(table);
+
+		// ask server to send database last updated timestamp
+		socket.emit('registerapistudentidlastupdated');
 
 	} else if(data.context != 'students') {
 		// get student data if we received no

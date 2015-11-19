@@ -496,6 +496,29 @@ function initSocketListener() {
 		 	client.emit('registerapiauthadminresponse', {});
 		 });
 		 
+		 // handle request for database last update timestamp
+		 // expects no data from client
+		 client.on('registerapistudentidlastupdated', function() {
+
+		 	mysql.query('SELECT propValue AS timestamp FROM `metadata` WHERE property="last_updated"', function(err, rows) {
+		 		
+		 		if(err) {
+		 			client.emit('registerapistudentidlastupdatedresponse', {
+			 			timestamp: null,
+			 			error: true,
+			 			message: err.toString()
+			 		});
+	 				return console.log('SERVER', 'CLIENT', 'MYSQL', err);
+		 		}
+
+		 		client.emit('registerapistudentidlastupdatedresponse', {
+ 					timestamp: rows[0].timestamp
+ 				});
+
+		 	});
+
+		 });
+
 		 // handle student registration
 		 client.on('registerapistudentid', function(clientData) {
 
