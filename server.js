@@ -50,6 +50,8 @@ var emailServer = emailjs.server.connect({
 
 var requestRouter = {
 	'/': 'index.html',
+	'/admin' : 'index.html',
+	'/clare': 'index.html',
 	'/api/register': 'index.html'
 };
 
@@ -252,6 +254,7 @@ function parseAPIV1Request(request, response, routedReq) {
 		event_name: null, // lockheed martin
 		semester: null, // spring, summer, fall
 		year: null // 2015
+
 	};
 
 	// parse through key-value pairs
@@ -486,6 +489,12 @@ function initSocketListener() {
 		/**
 		 * Handle GUI events
 		 */
+
+		 client.on('registerapiauthadmin', function(clientData) {
+		 	console.log('received admin auth request');
+		 	console.log(clientData);
+		 	client.emit('registerapiauthadminresponse', {});
+		 });
 		 
 		 // handle student registration
 		 client.on('registerapistudentid', function(clientData) {

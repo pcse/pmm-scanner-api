@@ -31,6 +31,11 @@ if(socket) {
 	socket.on('registerapistudentidresponse', function(data) {
 		handleServerStudentRegisterResponse(data);
 	});
+
+	// listen for admin authentication
+	socket.on('registerapiauthadminresponse', function(data) {
+		handleServerAdminRegisterResponse(data);
+	});
 }
 </script>
 </head>
@@ -84,7 +89,11 @@ if(socket) {
 </div><!--.panel-->
 <div id="overlay"></div><!--#overlay-->
 <script>
+
 var DEFAULT_MAIN_OUTPUT_PLACEHOLDER = 'Enter your email';
+var PAGE_HOME = 'home';
+var PAGE_REGISTER = 'register';
+var PAGE_ADMIN = 'admin';
 
 var closeButton = document.getElementById('close-button');
 
@@ -96,7 +105,11 @@ var resultsPage = document.getElementById('results-panel');
 var resultsContent = document.getElementById('results-content');
 var homePage = document.getElementById('main-panel');
 
-var isMainPage = false;
+// application states
+var isMainPage 				= false;
+var isAdminEmailEntered 	= false;
+var isAdminHashkeyEntered 	= false;
+var isPage = PAGE_HOME;
 
 // focus main input
 if(mainInput) {
@@ -107,15 +120,13 @@ if(mainInput) {
 }
 
 // handle views based on URL
-handleURL(urlPieces);
-
-if(isMainPage) {
-	DEFAULT_MAIN_OUTPUT_PLACEHOLDER = 'Enter your student ID';
-}
+handleURL(window.location.href);
 
 if(closeButton) {
 	closeButton.addEventListener('click', function() {
-		showHomePage();
+		resultsPage.style.display = 'none';
+		mainInput.value = '';
+		handleViewByPageName(isPage);
 	});
 }
 
@@ -129,34 +140,141 @@ if(!isMainPage && params[1] == 'email' && params[2]) {
 function handleURL(urlPieces) {
 
 	isMainPage = false;
-	var path = urlPieces.length && urlPieces[1] && urlPieces[1].split('/')[0];
 	
-	if(path == 'register') {
+	var urlParams = urlPieces.split(window.location.host);
+	var path = urlParams && urlParams.length > 1 ? urlParams[1] : null;
+	
+	if(path == '/api/register') {
 		handleRegistrationView();
-	} else if(path == 'clare') {
+	} else if(path == '/clare' || path == '/admin') {
 		handleAdminView();
 	} else {
-		isMainPage = true;
 		handleMainView();
 	}
 
 }
 
+function handleViewByPageName(isPage) {
+
+	if(isPage == PAGE_ADMIN) {
+		handleAdminView();
+	} else if(isPage == PAGE_REGISTER) {
+		handleRegistrationView();
+	} else {
+		handleMainView();
+	}
+
+}
+
+function handleMainView() {
+
+	DEFAULT_MAIN_OUTPUT_PLACEHOLDER = 'Type your ID';
+
+	isMainPage = true;
+	isPage = PAGE_HOME;
+
+	homePage.style.display = 'block';
+
+	if(mainInput) {
+		mainInput.placeholder = DEFAULT_MAIN_OUTPUT_PLACEHOLDER;
+		mainInput.focus();
+	}
+}
+
 function handleRegistrationView() {
+
+	isPage = PAGE_REGISTER;
+	DEFAULT_MAIN_OUTPUT_PLACEHOLDER = 'Enter your email';
 	
 	if(!mainInput || !mainOutput) {
 		return;
 	}
+
+	homePage.style.display = 'block';
 	
-	mainInput.placeholder = 'Enter your email';
+	mainInput.placeholder = DEFAULT_MAIN_OUTPUT_PLACEHOLDER;
 	mainOutput.innerHTML = 'Press ENTER To continue signing up';
 }
 
 function handleAdminView() {
 
-} 
+	isPage = PAGE_ADMIN;
+	DEFAULT_MAIN_OUTPUT_PLACEHOLDER = 'Enter your email';
 
-function handleMainView() {
+	if(!mainInput || !mainOutput) {
+		return;
+	}
+
+	homePage.style.display = 'block';
+	
+	mainInput.placeholder = DEFAULT_MAIN_OUTPUT_PLACEHOLDER;
+	mainOutput.innerHTML = 'Press ENTER To continue';
+}
+
+function handleAdminAuthentication() {
+
+	if(!isPage == PAGE_ADMIN) {
+		return;
+	}
+
+	if(isAdminEmailEntered) {
+
+		// determine if admin has entered api key
+		// and authenticate with api server
+		if(isAdminHashkeyEntered) {
+
+			// reset admin state values
+			isAdminEmailEntered 		= false;
+			isAdminHashkeyEntered 		= false;
+
+			// display results page and wait for server response
+			showAdminResultsPage(mainInput.valueAdminEmail, mainInput.valueAdminHashKey);
+
+			// reset admin input
+			mainInput.valueAdminEmail 	= null;
+			mainInput.valueAdminHashKey = null;
+
+			return;
+		}
+
+		// if we made it this far, admin has entered email
+		// and is submitting hashkey.
+		mainInput.valueAdminHashKey = mainInput.value;
+		isAdminHashkeyEntered = true;
+		handleAdminAuthentication();
+		return;
+	}
+
+	// if we made it this far, email has not been entered.
+	// check input value for a valid email string
+	if(!mainInput.value.match(/^[a-z\-\_\.]+(\.[0-9]+)*\@(cnu\.edu)/gi)) {
+		mainInput.value = '';
+		return mainInput.placeholder = 'Please enter a valid email';
+	}
+
+	// assume admin email is of correct format. Save it and continue reg process
+	mainInput.valueAdminEmail = mainInput.value;
+	isAdminEmailEntered = true;
+
+	mainInput.value = '';
+	mainInput.placeholder = 'Enter your API key';
+
+}
+
+function showAdminResultsPage(email, key) {
+
+	mainInput.placeholder = DEFAULT_MAIN_OUTPUT_PLACEHOLDER;
+	homePage.style.display = 'none';
+	resultsPage.style.display = 'block';
+	resultsContent.innerHTML = 'Loading, please wait...';
+
+	if(socket) {
+		socket.emit('registerapiauthadmin', {
+			email: email,
+			hash: key
+		});
+	
+	}
 
 }
 
@@ -189,6 +307,16 @@ function showHomeResultsPage(studentId) {
 		});
 	
 	}
+}
+
+// received when an admin is authenticated with the
+// server, or when an admin authentication response
+// is received from the server
+function handleServerAdminRegisterResponse(data) {
+	
+	// I AM HERE. WAIT FOR RESPONSE FROM SERVER
+
+	console.log(data);
 }
 
 function handleServerStudentRegisterResponse(data) {
@@ -291,17 +419,6 @@ function handleServerEmailRegisterResponse(data) {
 	resultsContent.innerHTML += 'To use the API, simply send an "Authentication" header with your request, containing the value "email=YOUR_EMAIL; key=KEY_HASH_EMAILED_TO_YOU"';
 }
 
-function showHomePage() {
-
-	resultsPage.style.display = 'none';
-	homePage.style.display = 'block';
-
-	if(mainInput) {
-		mainInput.placeholder = DEFAULT_MAIN_OUTPUT_PLACEHOLDER;
-		mainInput.focus();
-	}
-}
-
 function handleKeypress(key) {
 
 	if(key == 13) {
@@ -312,18 +429,24 @@ function handleKeypress(key) {
 
 		if(!isMainPage) {
 
-			var cnuEmail = mainInput.value;
+			if(isPage == PAGE_REGISTER) {
 
-			if(!mainInput.value.match(/^[a-z\-\_\.]+(\.[0-9]+)*\@(cnu\.edu)$/gi)) {
+				var cnuEmail = mainInput.value;
+
+				if(!mainInput.value.match(/^[a-z\-\_\.]+(\.[0-9]+)*\@(cnu\.edu)$/gi)) {
+					mainInput.value = '';
+					mainInput.placeholder = 'Enter a valid CNU email';
+					return;
+				}
+
 				mainInput.value = '';
-				mainInput.placeholder = 'Enter a valid CNU email';
-				return;
+				mainInput.placeholder = 'Loading, please wait...';
+
+				return showRegisterResultsPage(cnuEmail);
+
+			} else if(isPage == PAGE_ADMIN) {
+				return handleAdminAuthentication();
 			}
-
-			mainInput.value = '';
-			mainInput.placeholder = 'Loading, please wait...';
-
-			return showRegisterResultsPage(cnuEmail);
 		}
 
 		var studentId = mainInput.value;
