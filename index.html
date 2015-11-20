@@ -49,6 +49,12 @@ if(socket) {
 			response_callbacks['registerapistudentcrnresponse'][i].call(this, data);
 		}
 	});
+
+	socket.on('registerapiadmindownloadspreadsheetresponse', function(data) {
+		for(var i = 0; i < response_callbacks['registerapiadmindownloadspreadsheetresponse'].length; i++) {
+			response_callbacks['registerapiadmindownloadspreadsheetresponse'][i].call(this, data);
+		}
+	});
 }
 
 /**
@@ -145,6 +151,7 @@ var isAdminHashkeyEntered 	= false;
 var isPage = PAGE_HOME;
 
 var extraCreditInputShowing = false;
+var eventsTableStudentEmailShowing = false;
 
 // page events
 $(window).on('keydown', function(key) {
@@ -155,6 +162,11 @@ $(window).on('keydown', function(key) {
 		if(extraCreditInputShowing) {
 			extraCreditInputShowing = false;
 			return $('.extra-credit-input').fadeOut('normal');
+		}
+
+		if(eventsTableStudentEmailShowing) {
+			eventsTableStudentEmailShowing = false;
+			return $('.events-table-student-email').fadeOut('normal');
 		}
 
 		$(closeButton).trigger('click');
@@ -386,7 +398,6 @@ function handleServerAdminRegisterResponse(data) {
 		return resultsContent.innerHTML = 'Unable to fetch event data from the database.';
 	}
 
-	console.log(data);
 	var students = {};
 	var studentCount = 0;
 
@@ -395,10 +406,12 @@ function handleServerAdminRegisterResponse(data) {
 		// initialize array for entry if not exists
 		if(!students[data.entries[i].id]) {
 			students[data.entries[i].id] = {
-				email: data.entries[i].email,
-				first: data.entries[i].first,
+				id: data.entries[i].id,
 				last: data.entries[i].last,
+				first: data.entries[i].first,
+				email: data.entries[i].email,
 				gradyear: data.entries[i].gradyear,
+				crn: data.entries[i].crn,
 				events:[]
 			};
 
@@ -414,26 +427,221 @@ function handleServerAdminRegisterResponse(data) {
 		});
 	}
 
-	resultsContent.innerHTML = 'Displaying <span style="color:rgb(189,224,216)">' + studentCount + ' students</span>. Only students that have gone to <span style="color:rgb(224,189,215);">one event or more</span> are displayed.';
+	resultsContent.innerHTML = '';
 
-	// draw table
+	/**
+	 * Section one - students with two points of ec
+	 */
+
+	 var sectionOneStudents = [];
+	 var sectionTwoStudents = [];
+	 var sectionThreeStudents = [];
+
+	// create top text
+	var ecStudentCount = 0;
+	var tableSpan = document.createElement('span');
+	tableSpan.innerHTML = 'Loading, please wait...';
+
+	resultsContent.appendChild(tableSpan);	
+
+	// draw table of students with 10 or more events
 	var table = document.createElement('table');
 	table.className = 'events-table';
 	table.border = '0';
 
 	for(var i in students) {
+
+		if(students[i].events.length < 10) {
+			continue;
+		}
+
+		ecStudentCount++;
+		sectionOneStudents.push(students[i]);
+
 		var tr = document.createElement('tr');
 		var color = randomColor({
 			luminosity: 'light',
 			hue: 'blue'
 		});
-		tr.innerHTML = '<td style="color:' + color + ';">' + students[i].first + ' ' + students[i].last + '</td>';
+
+		tr.innerHTML = '<td style="color:' + color + ';min-width:225px;"><span class="events-table-student-email"><a href="mailto:' + students[i].email + '">' + students[i].email + '</a></span><span class="events-table-student-entry">' + students[i].first + ' ' + students[i].last + '</span></td>';
 		tr.innerHTML += '<td style="text-align:right;color:' + color + ';">' + students[i].events.length + ' events' + '</td>';
+		tr.innerHTML += '<td style="text-align:right;color:' + color + ';">' + (students[i].crn ? students[i].crn : '<span style="opacity:0.45;">No course chosen</span>') + '</td>';
 		table.appendChild(tr);
 	}
 
 	resultsContent.appendChild(table);
 
+	// update stats
+	tableSpan.innerHTML = 'Displaying <span style="color:rgb(189,224,216)">' + ecStudentCount + ' students</span> that have earned <span style="color:rgb(224,189,215);">two points of extra credit</span> and have gone to <span style="color:#7ce2ef;">ten or more events</span>. <span class="download-excel download-excel-two-points">Click to <span style="color:#b4a9fc;">download spreadsheet</span></span>.';
+
+
+	// separate last section from new section
+	resultsContent.innerHTML += '<div class="spacer"></div>';
+
+	/**
+	 * Section two - students with one point of ec
+	 */
+
+	// create view for students with one point of extra credit
+	// reset count and dom pointers
+	ecStudentCount = 0;
+	tableSpan = document.createElement('span');
+	tableSpan.innerHTML = 'Loading, please wait...';
+
+	resultsContent.appendChild(tableSpan);
+
+	// draw table of students with 10 or more events
+	table = document.createElement('table');
+	table.className = 'events-table';
+	table.border = '0';
+
+	for(var i in students) {
+
+		if(students[i].events.length < 8 || students[i].events.length > 9) {
+			continue;
+		}
+
+		ecStudentCount++;
+		sectionTwoStudents.push(students[i]);
+
+		var tr = document.createElement('tr');
+		var color = randomColor({
+			luminosity: 'light',
+			hue: 'blue'
+		});
+
+		tr.innerHTML = '<td style="color:' + color + ';min-width:225px;"><span class="events-table-student-email"><a href="mailto:' + students[i].email + '">' + students[i].email + '</a></span><span class="events-table-student-entry">' + students[i].first + ' ' + students[i].last + '</span></td>';
+		tr.innerHTML += '<td style="text-align:right;color:' + color + ';">' + students[i].events.length + ' events' + '</td>';
+		tr.innerHTML += '<td style="text-align:right;color:' + color + ';">' + (students[i].crn ? students[i].crn : '<span style="opacity:0.45;">No course chosen</span>') + '</td>';
+		table.appendChild(tr);
+	}
+
+	resultsContent.appendChild(table);
+
+	// update stats
+	tableSpan.innerHTML = 'Displaying <span style="color:rgb(189,224,216)">' + ecStudentCount + ' students</span> that have earned <span style="color:rgb(224,189,215);">one point of extra credit</span> and have gone to <span style="color:#7ce2ef;">eight or more events</span>. <span class="download-excel download-excel-one-point">Click to <span style="color:#b4a9fc;">download spreadsheet</span></span>.';
+
+	// separate last section from new section
+	resultsContent.innerHTML += '<div class="spacer"></div>';
+
+	/**
+	 * Section three - students with no points of ec
+	 */
+
+	// create view for students with zero point of extra credit
+	// reset count and dom pointers
+	ecStudentCount = 0;
+	tableSpan = document.createElement('span');
+	tableSpan.innerHTML = 'Loading, please wait...';
+
+	resultsContent.appendChild(tableSpan);
+
+	// draw table of students with 10 or more events
+	table = document.createElement('table');
+	table.className = 'events-table';
+	table.border = '0';
+
+	for(var i in students) {
+
+		if(students[i].events.length > 7) {
+			continue;
+		}
+
+		ecStudentCount++;
+		sectionThreeStudents.push(students[i]);
+
+		var tr = document.createElement('tr');
+		var color = randomColor({
+			luminosity: 'light',
+			hue: 'blue'
+		});
+
+		tr.innerHTML = '<td style="color:' + color + ';min-width:225px;"><span class="events-table-student-email"><a href="mailto:' + students[i].email + '">' + students[i].email + '</a></span><span class="events-table-student-entry">' + students[i].first + ' ' + students[i].last + '</span></td>';
+		tr.innerHTML += '<td style="text-align:right;color:' + color + ';">' + students[i].events.length + ' events' + '</td>';
+		tr.innerHTML += '<td style="text-align:right;color:' + color + ';">' + (students[i].crn ? students[i].crn : '<span style="opacity:0.45;">No course chosen</span>') + '</td>';
+		table.appendChild(tr);
+	}
+
+	resultsContent.appendChild(table);
+
+	// update stats
+	tableSpan.innerHTML = 'Displaying <span style="color:rgb(189,224,216)">' + ecStudentCount + ' students</span> that have earned <span style="color:rgb(224,189,215);">zero points of extra credit</span> and have gone to <span style="color:#7ce2ef;">less than eight events</span>. <span class="download-excel download-excel-no-points">Click to <span style="color:#b4a9fc;">download spreadsheet</span></span>.';
+
+	// add event listeners to table rows
+	$('.events-table-student-entry').on('click', function() {
+		eventsTableStudentEmailShowing = true;
+		$(this.parentNode.getElementsByClassName('events-table-student-email').item(0)).fadeIn('normal');
+	});
+
+	// handle specific downlaod requests
+	$('.download-excel-two-points').on('click', function() {
+
+		if(this.isBusy) {
+			return;
+		}
+
+		var that = this;
+
+		this.isBusy = true;
+		$(this).animate({ opacity: 0.5 }, 500);
+
+		// send data to server, wait for response
+		// containing url to generated xlsx file
+		socket.emit('registerapiadmindownloadspreadsheet', { filename: 'students_extra_credit_2pts.csv', entries: sectionOneStudents }); 
+
+		onSocketResponse('registerapiadmindownloadspreadsheetresponse', function(data) {
+			that.isBusy = false;
+			$(that).animate({ opacity: 1.0 }, 500);
+			window.open(data.url, '_blank');
+		});
+	});
+
+	// handle specific downlaod requests
+	$('.download-excel-one-point').on('click', function() {
+
+		if(this.isBusy) {
+			return;
+		}
+
+		var that = this;
+
+		this.isBusy = true;
+		$(this).animate({ opacity: 0.5 }, 500);
+
+		// send data to server, wait for response
+		// containing url to generated xlsx file
+		socket.emit('registerapiadmindownloadspreadsheet', { filename: 'students_extra_credit_1pt.csv', entries: sectionTwoStudents }); 
+
+		onSocketResponse('registerapiadmindownloadspreadsheetresponse', function(data) {
+			that.isBusy = false;
+			$(that).animate({ opacity: 1.0 }, 500);
+			window.open(data.url, '_blank');
+		});
+	});
+
+	// handle specific downlaod requests
+	$('.download-excel-no-points').on('click', function() {
+
+		if(this.isBusy) {
+			return;
+		}
+
+		var that = this;
+
+		this.isBusy = true;
+		$(this).animate({ opacity: 0.5 }, 500);
+
+		// send data to server, wait for response
+		// containing url to generated xlsx file
+		socket.emit('registerapiadmindownloadspreadsheet', { filename: 'students_extra_credit_NOpts.csv', entries: sectionThreeStudents }); 
+
+		onSocketResponse('registerapiadmindownloadspreadsheetresponse', function(data) {
+			that.isBusy = false;
+			$(that).animate({ opacity: 1.0 }, 500);
+			window.open(data.url, '_blank');
+		});
+	});
 }
 
 /**

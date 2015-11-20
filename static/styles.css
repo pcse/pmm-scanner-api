@@ -109,6 +109,14 @@ a {
 			position: relative;
 			width: 100%;
 		}
+
+		#results-panel .editor .editor-wrapper .editor-content .download-excel {
+				cursor: pointer;
+			}
+				#results-panel .editor .editor-wrapper .editor-content .download-excel:hover {
+					text-decoration: underline;
+				}
+
 			#results-panel .editor .editor-wrapper .editor-content .extra-credit-text {
 				cursor: pointer;
 			}
@@ -144,7 +152,24 @@ a {
 			#results-panel .editor .editor-wrapper .editor-content .events-table tr td {
 				font-weight: 300;
 				margin: 0 20px 0;
+				position: relative;
 			}
+				#results-panel .editor .editor-wrapper .editor-content .events-table tr td .events-table-student-email {
+					background: black;
+					display: none;
+					height: 100%;
+					left: 0;
+					position: absolute;
+					top: 0;
+					width: 100%;
+				}
+
+				#results-panel .editor .editor-wrapper .editor-content .events-table tr td .events-table-student-entry {
+					cursor: pointer;
+				}
+					#results-panel .editor .editor-wrapper .editor-content .events-table tr td .events-table-student-entry:hover {
+						text-decoration: underline;
+					}
 
 #main-panel {
 	display: block;
@@ -242,6 +267,11 @@ font:200 0.8em 'Helvetica Neue', 'Roboto', 'Arial'; color:rgba(255,255,255,0.4);
 	#footer p {
 	/*margin-bottom:10px;*/
 	}
+
+.spacer {
+	height: 70px;
+	width: 100%;
+}
 
 .events-last-updated {
 	font-size: 0.8em;

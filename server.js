@@ -30,6 +30,7 @@ var ERR_CODE_FILEIO_404 			= -6;
 var fs 		= require('fs');
 var socket 	= require('socket.io');
 var http 	= require('http');
+var fcsv 	= require('fast-csv');
 var mysql   = require('mysql').createConnection({
 	host    : MYSQL_DB_HOST,
 	port    : MYSQL_DB_PORT,
@@ -64,6 +65,7 @@ var requestDefs = {
 
 var typeDefs = {
 	'css' 	: 'text/css' 				,
+	'csv'	: 'text/csv'				,
 	'html' 	: 'text/html' 				,
 	'ico' 	: 'image/x-icon'			,
 	'jpg' 	: 'image/jpeg'				,
@@ -123,6 +125,27 @@ var httpServer = http.createServer(function(request, response) {
 
 	} else if(routedReq.match(/\/api\/.*/gi) && !routedReq.match(/\/api\/register\/.*/gi)) {
 		respondWithError(response, ERR_API_INVALID_ENDPOINT);
+	} else if(routedReq.match(/\/downloads\/.*/gi)) {
+
+		var file = routedReq.split('/downloads/')[1];
+
+		fs.readFile(__dirname + '/downloads/' + file, function(err, data) {
+			
+			// file does not exist
+			if(err) {
+				console.log('SERVER', 'HTTP', '404', err);
+				response.writeHead(404);
+				return response.end(ERR_FILEIO_404);
+			}
+
+			var ext = file.split('.');
+			ext = ext[ext.length - 1];
+
+			response.writeHead(200, { 'Content-Type': (typeDefs[ext] || 'text/plain'), 'Content-Disposition': 'attachment; filename=' + file });
+			response.end(data);
+
+		});
+
 	} else {
 
 		var pathToFile = routedReq;
@@ -490,7 +513,31 @@ function initSocketListener() {
 		 * Handle GUI events
 		 */
 
-		 client.on('registerapiauthadmin', function(clientData) {
+
+		// admin has requested a spreadhseet version of the
+		// data provided as an array
+		client.on('registerapiadmindownloadspreadsheet', function(data) {
+			
+			var csvStream = fcsv.createWriteStream({ headers: true });
+			var stream  = fs.createWriteStream(__dirname + '/downloads/' + data.filename);
+
+			stream.on('finish', function() {
+				client.emit('registerapiadmindownloadspreadsheetresponse', { url: '/downloads/' + data.filename });
+			});
+
+			csvStream.pipe(stream);
+
+			for(var i = 0; i < data.entries.length; i++) {
+				data.entries[i].events = data.entries[i].events.length;
+				csvStream.write(data.entries[i]);
+			}
+
+			csvStream.end();
+
+		});
+
+		// admin has requested authentication
+		client.on('registerapiauthadmin', function(clientData) {
 
 		 	if(!clientData.email || !clientData.hash) {
 		 		client.emit('registerapiauthadminresponse', {
@@ -501,6 +548,8 @@ function initSocketListener() {
  				return console.log('SERVER', 'CLIENT', 'MYSQL', err);
 		 	}
 
+		 	// authenticate admin; determine if any rows exist with
+		 	// email and hashkey provided
 		 	mysql.query('SELECT * FROM `metadata` WHERE propValue="' + clientData.email + '" AND hashKey="' + clientData.hash + '"', function(mErr, rows) {
 
 		 		if(mErr) {
@@ -522,13 +571,17 @@ function initSocketListener() {
 			 		});
 		 		}
 
-		 		// if we got this far, assume user authenticated correctly
-		 		// return all event rows using api
-		 		requestUsingAPI('/api/v1/context/general', function(err, data) {
+		 		// use api to select general context of students to events
+		 		// also merge in courses selected
+		 		mysql.query('SELECT t1.event_id, t2.event_name, t2.semester, t2.year, t3.student_id AS id, \
+		 			t3.first, t3.last, t3.major, t3.year AS gradyear, t3.email, t3.date_added AS since, \
+		 			t4.crn FROM `attendance` AS t1 LEFT JOIN `students` AS t3 ON t1.student_id=t3.student_id \
+		 			LEFT JOIN `events` AS t2 ON t1.event_id=t2.table_name LEFT JOIN `chosencourses` \
+		 			AS t4 ON t1.student_id=t4.student_id ORDER BY t3.last ASC', function(err, rows) {
+		 				
+	 				if(err) {
 
-		 			if(err) {
-
-		 				console.log('SERVER', 'CLIENT', 'API', 'HTTP', err);
+	 					console.log('SERVER', 'CLIENT', 'API', 'HTTP', err);
 
 		 				return client.emit('registerapiauthadminresponse', {
 		 					entries: [],
@@ -536,20 +589,15 @@ function initSocketListener() {
 				 			error: true,
 				 			message: err
 		 				});
-		 			}
 
-		 			try {
+	 				}
 
-		 				client.emit('registerapiauthadminresponse', {
-		 					entries: JSON.parse(data),
-		 					authenticated: true
-		 				});
+	 				client.emit('registerapiauthadminresponse', {
+	 					entries: rows,
+	 					authenticated: true
+	 				});
 
-		 			} catch(e) {
-		 				console.log('SERVER', 'CLIENT', 'HTTP', 'JSON->parse', e);
-		 			}
-
-		 		});
+	 			});
 
 		 	});
 
