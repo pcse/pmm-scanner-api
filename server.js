@@ -343,11 +343,11 @@ function parseAPIV1Request(request, response, routedReq) {
 		}
 
 		if(keyValuePairs.context == 'students') {
-			mysqlQuery += " GROUP BY t1.student_id";
+			mysqlQuery += " GROUP BY t1.student_id ORDER BY t3.last ASC";
 		} else if(keyValuePairs.context == 'events') {
-			mysqlQuery += " GROUP BY t1.event_id";
+			mysqlQuery += " GROUP BY t1.event_id ORDER BY t2.id ASC";
 		}
-
+console.log(mysqlQuery);
 	} else {
 		return respondWithError(response, ERR_API_MISSING_CONTEXT);
 	}
@@ -491,10 +491,81 @@ function initSocketListener() {
 		 */
 
 		 client.on('registerapiauthadmin', function(clientData) {
-		 	console.log('received admin auth request');
-		 	console.log(clientData);
-		 	client.emit('registerapiauthadminresponse', {});
+
+		 	if(!clientData.email || !clientData.hash) {
+		 		client.emit('registerapiauthadminresponse', {
+		 			entries: [],
+		 			error: true,
+		 			message: err.toString()
+		 		});
+ 				return console.log('SERVER', 'CLIENT', 'MYSQL', err);
+		 	}
+
+		 	mysql.query('SELECT * FROM `metadata` WHERE propValue="' + clientData.email + '" AND hashKey="' + clientData.hash + '"', function(mErr, rows) {
+
+		 		if(mErr) {
+		 			client.emit('registerapiauthadminresponse', {
+			 			entries: [],
+			 			error: true,
+			 			authenticated: false,
+			 			message: mErr.toString()
+			 		});
+	 				return console.log('SERVER', 'CLIENT', 'MYSQL', mErr);
+		 		}
+
+		 		if(!rows.length) {
+		 			return client.emit('registerapiauthadminresponse', {
+			 			entries: [],
+			 			authenticated: false,
+			 			error: true,
+			 			message: ERR_API_UNAUTHORIZED
+			 		});
+		 		}
+
+		 		// if we got this far, assume user authenticated correctly
+		 		// return all event rows using api
+		 		requestUsingAPI('/api/v1/context/general', function(err, data) {
+
+		 			if(err) {
+
+		 				console.log('SERVER', 'CLIENT', 'API', 'HTTP', err);
+
+		 				return client.emit('registerapiauthadminresponse', {
+		 					entries: [],
+				 			authenticated: false,
+				 			error: true,
+				 			message: err
+		 				});
+		 			}
+
+		 			try {
+
+		 				client.emit('registerapiauthadminresponse', {
+		 					entries: JSON.parse(data),
+		 					authenticated: true
+		 				});
+
+		 			} catch(e) {
+		 				console.log('SERVER', 'CLIENT', 'HTTP', 'JSON->parse', e);
+		 			}
+
+		 		});
+
+		 	});
+
 		 });
+
+		// handle request from client to send info on course
+		// chosen by student. Excpects student id
+		client.on('registerapistudentidcourseinfo', function(data) {
+
+			if(!data.id) {
+				return console.log('SERVER', 'CLIENT', 'MYSQL->courseInfo', 'Unable to process request. No student ID given.');
+			}
+
+			// mysql.query('SELECT * FROM '); ////--
+
+		})
 		 
 		 // handle request for database last update timestamp
 		 // expects no data from client
@@ -695,6 +766,50 @@ function initSocketListener() {
 		});
 
 	});
+}
+
+/**
+ * Makes a request to the public API
+ * and returns values from server
+ */
+function requestUsingAPI(endpoint, callback) {
+
+	var ERROR_OCCURRED = false;
+
+	var request = http.request({
+ 		host: 'pmm-rubyserverapps.rhcloud.com',
+ 		path: endpoint,
+ 		method: 'GET',
+ 		headers: {
+ 			'Authentication': 'email=juan.vallejo.12@cnu.edu; key=eOKpAJgR3'
+ 		}
+
+ 	}, function(response) {
+
+ 		var data = '';
+
+ 		response.on('data', function(chunk) {
+ 			data += chunk;
+ 		});
+
+ 		response.on('end', function() {
+ 			if(typeof callback == 'function') {
+ 				callback.call(this, ERROR_OCCURRED, data);
+ 			}
+ 		});
+
+ 	});
+
+ 	request.end();
+
+ 	request.on('error', function(err) {
+
+ 		ERROR_OCCURRED = err;
+
+ 		if(typeof callback == 'function') {
+ 			callback.call(this, ERROR_OCCURRED);
+ 		}
+ 	});
 }
 
 /**
