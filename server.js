@@ -555,17 +555,28 @@ function initSocketListener() {
 
 		 });
 
-		// handle request from client to send info on course
-		// chosen by student. Excpects student id
-		client.on('registerapistudentidcourseinfo', function(data) {
+		// handle client requesting update of student CRN
+		// expects data to contain a student ID
+		client.on('registerapistudentcrn', function(data) {
+			mysql.query('INSERT INTO `chosencourses` (crn, student_id) VALUES ("' + data.crn + '", "' + data.id + '") ON DUPLICATE KEY UPDATE crn="' + data.crn + '"', function(err) {
 
-			if(!data.id) {
-				return console.log('SERVER', 'CLIENT', 'MYSQL->courseInfo', 'Unable to process request. No student ID given.');
-			}
+				if(err) {
+					client.emit('registerapistudentcrnresponse', {
+			 			updated: false,
+			 			crn: null,
+			 			error: true,
+			 			message: err.toString()
+			 		});
+	 				return console.log('SERVER', 'CLIENT', 'MYSQL', 'UPDATE->courseCRN', err);
+				}
 
-			// mysql.query('SELECT * FROM '); ////--
+				client.emit('registerapistudentcrnresponse', {
+		 			updated: true,
+		 			crn: data.crn
+		 		});
 
-		})
+			});
+		});
 		 
 		 // handle request for database last update timestamp
 		 // expects no data from client

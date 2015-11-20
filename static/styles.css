@@ -100,9 +100,36 @@ a {
 
 	#results-panel .editor .editor-wrapper .editor-content {
 		font-size: 1em;
-		margin-top: 15%;
+		margin-top: 5%;
 		text-align: center;
 	}
+
+		#results-panel .editor .editor-wrapper .editor-content .course-info {
+			display: block;
+			position: relative;
+			width: 100%;
+		}
+			#results-panel .editor .editor-wrapper .editor-content .extra-credit-text {
+				cursor: pointer;
+			}
+				#results-panel .editor .editor-wrapper .editor-content .extra-credit-text:hover {
+					text-decoration: underline;
+				}
+			
+			#results-panel .editor .editor-wrapper .editor-content .extra-credit-input {
+				background: black;
+				border: 0;
+				color: rgba(255,255,255,0.8);
+				display: none;
+				font: 300 1.2em 'Helvetica Neue', 'Roboto';
+				height: 100%;
+				left: 0;
+				padding: 2px;
+				position: absolute;
+				top: 0;
+				text-align: center;
+				width: 100%;
+			}
 
 	#results-panel .editor .editor-wrapper .editor-content .events-table {
 		background: transparent;
