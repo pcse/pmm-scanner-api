@@ -444,14 +444,14 @@ function handleServerAdminRegisterResponse(data) {
 
 	resultsContent.appendChild(tableSpan);	
 
-	// draw table of students with 10 or more events
+	// draw table of students with 12 or more events
 	var table = document.createElement('table');
 	table.className = 'events-table';
 	table.border = '0';
 
 	for(var i in students) {
 
-		if(students[i].events.length < 10) {
+		if(students[i].events.length < 12) {
 			continue;
 		}
 
@@ -491,14 +491,14 @@ function handleServerAdminRegisterResponse(data) {
 
 	resultsContent.appendChild(tableSpan);
 
-	// draw table of students with 10 or more events
+	// draw table of students with 12 or more events
 	table = document.createElement('table');
 	table.className = 'events-table';
 	table.border = '0';
 
 	for(var i in students) {
 
-		if(students[i].events.length < 8 || students[i].events.length > 9) {
+		if(students[i].events.length < 8 || students[i].events.length > 11) {
 			continue;
 		}
 
@@ -537,7 +537,7 @@ function handleServerAdminRegisterResponse(data) {
 
 	resultsContent.appendChild(tableSpan);
 
-	// draw table of students with 10 or more events
+	// draw table of students with 12 or more events
 	table = document.createElement('table');
 	table.className = 'events-table';
 	table.border = '0';
@@ -700,7 +700,7 @@ function handleServerStudentRegisterResponse(data) {
 
 		if(data.entries.length >= 8) {
 			extraCredit = 1;
-			if(data.entries.length >= 10) {
+			if(data.entries.length >= 12) {
 				extraCredit = 2;
 			}
 		}
