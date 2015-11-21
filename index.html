@@ -473,7 +473,7 @@ function handleServerAdminRegisterResponse(data) {
 	resultsContent.appendChild(table);
 
 	// update stats
-	tableSpan.innerHTML = 'Displaying <span style="color:rgb(189,224,216)">' + ecStudentCount + ' students</span> that have earned <span style="color:rgb(224,189,215);">two points of extra credit</span> and have gone to <span style="color:#7ce2ef;">twelve or more events</span>. <span class="download-excel download-excel-two-points">Click to <span style="color:#b4a9fc;">download spreadsheet</span></span>.';
+	tableSpan.innerHTML = 'Displaying <span style="color:rgb(189,224,216)">' + ecStudentCount + ' students</span> that have earned <span style="color:rgb(224,189,215);">two points of extra credit</span> and have gone to <span style="color:#7ce2ef;">twelve or more events</span>. <span id="students_extra_credit_2" class="download-excel download-excel-two-points">Click to <span style="color:#b4a9fc;">download spreadsheet</span></span>.';
 
 
 	// separate last section from new section
@@ -520,7 +520,7 @@ function handleServerAdminRegisterResponse(data) {
 	resultsContent.appendChild(table);
 
 	// update stats
-	tableSpan.innerHTML = 'Displaying <span style="color:rgb(189,224,216)">' + ecStudentCount + ' students</span> that have earned <span style="color:rgb(224,189,215);">one point of extra credit</span> and have gone to <span style="color:#7ce2ef;">eight or more events</span>. <span class="download-excel download-excel-one-point">Click to <span style="color:#b4a9fc;">download spreadsheet</span></span>.';
+	tableSpan.innerHTML = 'Displaying <span style="color:rgb(189,224,216)">' + ecStudentCount + ' students</span> that have earned <span style="color:rgb(224,189,215);">one point of extra credit</span> and have gone to <span style="color:#7ce2ef;">eight or more events</span>. <span id="students_extra_credit_1" class="download-excel download-excel-one-point">Click to <span style="color:#b4a9fc;">download spreadsheet</span></span>.';
 
 	// separate last section from new section
 	resultsContent.innerHTML += '<div class="spacer"></div>';
@@ -566,7 +566,7 @@ function handleServerAdminRegisterResponse(data) {
 	resultsContent.appendChild(table);
 
 	// update stats
-	tableSpan.innerHTML = 'Displaying <span style="color:rgb(189,224,216)">' + ecStudentCount + ' students</span> that have earned <span style="color:rgb(224,189,215);">zero points of extra credit</span> and have gone to <span style="color:#7ce2ef;">less than eight events</span>. <span class="download-excel download-excel-no-points">Click to <span style="color:#b4a9fc;">download spreadsheet</span></span>.';
+	tableSpan.innerHTML = 'Displaying <span style="color:rgb(189,224,216)">' + ecStudentCount + ' students</span> that have earned <span style="color:rgb(224,189,215);">zero points of extra credit</span> and have gone to <span style="color:#7ce2ef;">less than eight events</span>. <span id="students_extra_credit_0" class="download-excel download-excel-no-points">Click to <span style="color:#b4a9fc;">download spreadsheet</span></span>.';
 
 	// add event listeners to table rows
 	$('.events-table-student-entry').on('click', function() {
@@ -574,74 +574,41 @@ function handleServerAdminRegisterResponse(data) {
 		$(this.parentNode.getElementsByClassName('events-table-student-email').item(0)).fadeIn('normal');
 	});
 
-	// handle specific downlaod requests
-	$('.download-excel-two-points').on('click', function() {
+	$('.download-excel').on('click', function() {
 
 		if(this.isBusy) {
 			return;
 		}
 
 		var that = this;
+		var clientData = {
+			filename: 'students_extra_credit_NOpts.csv',
+			entries: sectionThreeStudents
+		};
 
-		this.isBusy = true;
-		$(this).animate({ opacity: 0.5 }, 500);
-
-		// send data to server, wait for response
-		// containing url to generated xlsx file
-		socket.emit('registerapiadmindownloadspreadsheet', { filename: 'students_extra_credit_2pts.csv', entries: sectionOneStudents }); 
-
-		onSocketResponse('registerapiadmindownloadspreadsheetresponse', function(data) {
-			that.isBusy = false;
-			$(that).animate({ opacity: 1.0 }, 500);
-			window.open(data.url, '_blank');
-		});
-	});
-
-	// handle specific downlaod requests
-	$('.download-excel-one-point').on('click', function() {
-
-		if(this.isBusy) {
-			return;
+		if(this.id == 'students_extra_credit_2') {
+			clientData.filename = 'students_extra_credit_2pts.csv';
+			clientData.entries = sectionOneStudents;
+		} else if(this.id == 'students_extra_credit_1') {
+			clientData.filename = 'students_extra_credit_1pts.csv';
+			clientData.entries = sectionTwoStudents;
 		}
 
-		var that = this;
-
 		this.isBusy = true;
 		$(this).animate({ opacity: 0.5 }, 500);
 
 		// send data to server, wait for response
 		// containing url to generated xlsx file
-		socket.emit('registerapiadmindownloadspreadsheet', { filename: 'students_extra_credit_1pt.csv', entries: sectionTwoStudents }); 
+		socket.emit('registerapiadmindownloadspreadsheet', clientData); 
 
 		onSocketResponse('registerapiadmindownloadspreadsheetresponse', function(data) {
 			that.isBusy = false;
 			$(that).animate({ opacity: 1.0 }, 500);
-			window.open(data.url, '_blank');
+			window.location.assign(data.url);
 		});
+
 	});
 
-	// handle specific downlaod requests
-	$('.download-excel-no-points').on('click', function() {
-
-		if(this.isBusy) {
-			return;
-		}
-
-		var that = this;
-
-		this.isBusy = true;
-		$(this).animate({ opacity: 0.5 }, 500);
-
-		// send data to server, wait for response
-		// containing url to generated xlsx file
-		socket.emit('registerapiadmindownloadspreadsheet', { filename: 'students_extra_credit_NOpts.csv', entries: sectionThreeStudents }); 
-
-		onSocketResponse('registerapiadmindownloadspreadsheetresponse', function(data) {
-			that.isBusy = false;
-			$(that).animate({ opacity: 1.0 }, 500);
-			window.open(data.url, '_blank');
-		});
-	});
 }
 
 /**
