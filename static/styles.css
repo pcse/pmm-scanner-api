@@ -110,6 +110,51 @@ a {
 			width: 100%;
 		}
 
+		#results-panel .editor .editor-wrapper .editor-content .survey-question-container {
+			margin: 90px 0 0 0;
+			text-align: left;
+			width: 100%;
+		}
+			#results-panel .editor .editor-wrapper .editor-content .survey-question {
+				border-bottom: 1px solid rgba(255,255,255,0.1);
+				margin: 0 0 60px 0;
+				padding: 0 0 60px 0;
+				width: 100%;
+			}
+				#results-panel .editor .editor-wrapper .editor-content .survey-question span.question_header {
+					border-bottom: 1px dashed rgba(255,255,255,0.1);
+					display: block;
+					margin: 0 0 15px 0;
+					padding: 0 0 15px 0;
+					width: 100%;
+				}
+					#results-panel .editor .editor-wrapper .editor-content .survey-question span.question_num {
+						display: block;
+						width: 100%;
+					}
+
+					#results-panel .editor .editor-wrapper .editor-content .survey-question span.question_title {
+						display: block;
+						text-align: right;
+						width: 100%;
+					}
+
+				#results-panel .editor .editor-wrapper .editor-content .survey-question span.question_body {
+					display: block;
+					width: 100%;
+				}
+					#results-panel .editor .editor-wrapper .editor-content .survey-question span.question_choice {
+						cursor: pointer;
+						display: block;
+						margin: 5px 0;
+						padding: 5px 5%;
+						width: 90%;
+					}
+						#results-panel .editor .editor-wrapper .editor-content .survey-question span.question_choice:hover {
+							background: #9ea2ff;
+							color: rgb(0,5,108);
+						}
+
 		#results-panel .editor .editor-wrapper .editor-content .download-excel {
 				cursor: pointer;
 			}

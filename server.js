@@ -649,8 +649,8 @@ function initSocketListener() {
 
 		 });
 
-		 // handle student registration
-		 client.on('registerapistudentid', function(clientData) {
+		// handle student registration
+		client.on('registerapistudentid', function(clientData) {
 
 		 	if(clientData.context == 'students') {
 		 		return mysql.query('SELECT * FROM `students` WHERE student_id = "' + clientData.id + '"', function(err, rows) {
@@ -673,6 +673,7 @@ function initSocketListener() {
 		 	}
 
 		 	// to speed things up, ignore api, use direct mysql query
+		 	// if we made it here, assume student has attended events before
 		 	mysql.query('SELECT t1.event_id, t2.event_name, t2.semester, t2.year, t3.student_id AS id, t3.first, \
 		 		t3.last, t3.major, t3.year AS gradyear, t3.email, t3.date_added AS since, t4.crn FROM `attendance` AS t1 \
 		 		LEFT JOIN `students` AS t3 ON t1.student_id=t3.student_id LEFT JOIN `events` AS t2 ON t1.event_id=t2.table_name \
@@ -698,7 +699,35 @@ function initSocketListener() {
 
 		 	});
 
-		 });
+		});
+
+		// handle student survey questions request
+		// expects student id
+		client.on('registerapistudentidsurvey', function(clientData) {
+
+		 	// fetch survey questions
+		 	mysql.query('SELECT t1.question_id,t1.question,t2.choice,t1.type FROM `surveyquestions` AS t1 LEFT JOIN `surveyquestionchoices` \
+		 	AS t2 ON t1.question_id=t2.question_id ORDER BY t1.question_id ASC', function(err, rows) {
+
+		 		if(err) {
+
+		 			client.emit('registerapistudentidsurveyresponse', {
+			 			entries: [],
+			 			error: true,
+			 			message: err.toString()
+			 		});
+
+		 			return console.log('SERVER', 'CLIENT', 'MYSQL', err);
+		 		}
+
+		 		client.emit('registerapistudentidsurveyresponse', {
+ 					entries: rows,
+ 					id: clientData.id
+ 				});
+
+		 	});
+
+		});
 
 		 // handle email registration
 		 client.on('registerapiemail', function(data) {

@@ -27,34 +27,46 @@ try {
 }
 
 if(socket) {
+
+	// admin has requested api access
 	socket.on('registerapiemailresponse', function(data) {
 		handleServerEmailRegisterResponse(data);
 	});
 
+	// student has requested to log in
 	socket.on('registerapistudentidresponse', function(data) {
 		handleServerStudentRegisterResponse(data);
 	});
 
-	// listen for admin authentication
+	// student has logged in, has requested survey questions
+	socket.on('registerapistudentidsurveyresponse', function(data) {
+		handleServerStudentRegisterSurveyResponse(data);
+	});
+
+	// admin has requested to log in
 	socket.on('registerapiauthadminresponse', function(data) {
 		handleServerAdminRegisterResponse(data);
 	});
 
+	// client has asked for database timestamp
 	socket.on('registerapistudentidlastupdatedresponse', function(data) {
 		handleStudentRegisterLastUpdatedResponse(data);
 	});
 
+	// student has requested last saved crn response
 	socket.on('registerapistudentcrnresponse', function(data) {
 		for(var i = 0; i < response_callbacks['registerapistudentcrnresponse'].length; i++) {
 			response_callbacks['registerapistudentcrnresponse'][i].call(this, data);
 		}
 	});
 
+	// client has requested spreadsheet generation from data
 	socket.on('registerapiadmindownloadspreadsheetresponse', function(data) {
 		for(var i = 0; i < response_callbacks['registerapiadmindownloadspreadsheetresponse'].length; i++) {
 			response_callbacks['registerapiadmindownloadspreadsheetresponse'][i].call(this, data);
 		}
 	});
+
 }
 
 /**
@@ -127,12 +139,17 @@ function onSocketResponse(eventName, callback) {
 <div id="overlay"></div><!--#overlay-->
 <script>
 
-var DEBUG = false;
+var DEBUG = true;
+var DEBUG_STUDENT_ID = '00754548'//'00814189';
 
 var DEFAULT_MAIN_OUTPUT_PLACEHOLDER = 'Enter your email';
 var PAGE_HOME = 'home';
 var PAGE_REGISTER = 'register';
 var PAGE_ADMIN = 'admin';
+
+// question type definitions
+var SURVEY_QUESTION_MULT_CHOICE = 1;
+var SURVEY_QUESTION_FREE_RESP 	= 2;
 
 var closeButton = document.getElementById('close-button');
 
@@ -149,6 +166,8 @@ var isMainPage 				= false;
 var isAdminEmailEntered 	= false;
 var isAdminHashkeyEntered 	= false;
 var isPage = PAGE_HOME;
+
+var currentStudentId 		= null;
 
 var extraCreditInputShowing = false;
 var eventsTableStudentEmailShowing = false;
@@ -203,7 +222,7 @@ if(!isMainPage && params[1] == 'email' && params[2]) {
 // if debug use default student ID
 if(DEBUG) {
 	console.log('WARN', 'DEBUG mode is on.', 'Please be cautious to set DEBUG mode off before pushing.');
-	showHomeResultsPage('00814189');
+	showHomeSurveyPage(DEBUG_STUDENT_ID);
 }
 
 function handleURL(urlPieces) {
@@ -330,6 +349,8 @@ function handleAdminAuthentication() {
 
 }
 
+// display all student event and course selection data
+// for selected admin with email, key combination
 function showAdminResultsPage(email, key) {
 
 	mainInput.placeholder = DEFAULT_MAIN_OUTPUT_PLACEHOLDER;
@@ -362,7 +383,11 @@ function showRegisterResultsPage(email) {
 	}
 }
 
+// display events for selected student id
 function showHomeResultsPage(studentId) {
+
+	// save to return to this page later
+	currentStudentId = studentId;
 
 	mainInput.placeholder = DEFAULT_MAIN_OUTPUT_PLACEHOLDER;
 	homePage.style.display = 'none';
@@ -378,12 +403,28 @@ function showHomeResultsPage(studentId) {
 	}
 }
 
+// display survey questions for selected student id
+function showHomeSurveyPage(studentId) {
+
+	mainInput.placeholder = DEFAULT_MAIN_OUTPUT_PLACEHOLDER;
+	homePage.style.display = 'none';
+	resultsPage.style.display = 'block';
+	resultsContent.innerHTML = 'Loading, please wait...';
+
+	if(socket) {
+		socket.emit('registerapistudentidsurvey', {
+			id: studentId
+		});
+	
+	}
+
+}
+
 // received when an admin is authenticated with the
 // server, or when an admin authentication response
 // is received from the server
 function handleServerAdminRegisterResponse(data) {
 	
-	// I AM HERE. WAIT FOR RESPONSE FROM SERVER
 	if(data.error) {
 		if(!data.authenticated) {
 			return resultsContent.innerHTML = 'Incorrect email or API key. Please try again, or email <a href="mailto:clarem@cnu.edu">clarem@cnu.edu</a> for more information. This incident will be logged.';
@@ -805,6 +846,99 @@ function handleServerStudentRegisterResponse(data) {
 	}
 }
 
+/**
+ * Called once server responds with survey data for the current
+ * student ID.
+ */
+function handleServerStudentRegisterSurveyResponse(data) {
+
+	var questions = {};
+	
+	for(var i = 0; i < data.entries.length; i++) {
+
+		if(!questions[data.entries[i].question_id]) {
+			questions[data.entries[i].question_id] = {
+				student_id: data.id,
+				question_id: data.entries[i].question_id,
+				question: data.entries[i].question,
+				type: data.entries[i].type,
+				choices: []
+			}
+		}
+
+		questions[data.entries[i].question_id].choices.push(data.entries[i].choice);
+
+	}
+
+	resultsContent.innerHTML = '<h1>Pizza My Mind Survey</h1>';
+
+	var parsedQuestions = [];
+
+	var questionsContainer = document.createElement('div');
+	questionsContainer.className = 'survey-question-container';
+
+	// iterate through questions
+	for(var i in questions) {
+
+		// save parsed question
+		parsedQuestions.push(questions[i]);
+
+		// save assigned question index
+		questions[i]._index = parsedQuestions.length - 1;
+
+		var surveyQuestion = document.createElement('div');
+		surveyQuestion.className = 'survey-question';
+
+		var surveyQuestionHeader = document.createElement('span');
+		surveyQuestionHeader.className = 'question_header';
+		surveyQuestionHeader.innerHTML = '<span class="question_num">' + parsedQuestions.length + '.</span> ';
+		surveyQuestionHeader.innerHTML += '<span class="question_title">' + questions[i].question + '</span>';
+
+		var surveyQuestionBody = document.createElement('span');
+		surveyQuestionBody.className = 'question_body';
+
+
+		if(questions[i].type == SURVEY_QUESTION_MULT_CHOICE) {
+
+			for(var x = 0; x < questions[i].choices.length; x++) {
+
+				var surveyQuestionChoice = document.createElement('span');
+				surveyQuestionChoice.className = 'question_choice';
+				surveyQuestionChoice.question_index = parsedQuestions.length - 1;
+				surveyQuestionChoice.innerHTML = questions[i].choices[x];
+				
+				$(surveyQuestionChoice).on('click', function() {
+
+					for(var y = 0; y < this.parentNode.children.length; y++) {
+						this.parentNode.children[y].style.backgroundColor = '';
+						this.parentNode.children[y].style.color = '';
+					}
+
+					this.style.backgroundColor = '#9ea2ff';
+					this.style.color = 'rgb(0,5,108)';
+					parsedQuestions[this.question_index].response = this.innerHTML;
+				});
+
+				surveyQuestionBody.appendChild(surveyQuestionChoice);
+			}
+
+		} else if(questions[i].type == SURVEY_QUESTION_FREE_RESP) {
+
+		}
+
+		surveyQuestion.appendChild(surveyQuestionHeader);
+		surveyQuestion.appendChild(surveyQuestionBody);
+		questionsContainer.appendChild(surveyQuestion);
+	}
+
+	resultsContent.appendChild(questionsContainer);
+	console.log(parsedQuestions);
+
+}
+
+/**
+ * Called once server responds with API registration data
+ */
 function handleServerEmailRegisterResponse(data) {
 
 	if(data.error && data.unauthorized) {
