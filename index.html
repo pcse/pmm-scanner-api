@@ -229,7 +229,7 @@ if(!isMainPage && params[1] == 'email' && params[2]) {
 // if debug use default student ID
 if(DEBUG) {
 	console.log('WARN', 'DEBUG mode is on.', 'Please be cautious to set DEBUG mode off before pushing.');
-	showHomeSurveyPage(DEBUG_STUDENT_ID);
+	showHomeResultsPage(DEBUG_STUDENT_ID);
 }
 
 // define general user action-driven callback functions
@@ -823,12 +823,10 @@ function handleServerStudentRegisterResponse(data) {
 
 					$(this).fadeOut('normal');
 
-					if(!old_crn) {
-						$('.extra-credit-text').html("You are <span style='color:#7ebfea;'>applying extra credit</span> to course <span id='extra-credit-crn' style='color:#77e6ea;'>" + crn + "</span>.");
+					// update crn information
+					$('.extra-credit-text').html("You are <span style='color:#7ebfea;'>applying extra credit</span> to course <span id='extra-credit-crn' style='color:#77e6ea;'>" + crn + "</span>.");
 
-					} else {
-						$('#extra-credit-crn').html(crn);
-					}
+					
 
 					// ask server to update CRN for current student
 					socket.emit('registerapistudentcrn', {
@@ -843,7 +841,15 @@ function handleServerStudentRegisterResponse(data) {
 							return $('#extra-credit-crn').html(old_crn);
 						}
 
-						$('#extra-credit-crn').html(data.crn)
+						extraCreditInput.placeholder = "Enter a Course Registration Number (" + (data.crn ? data.crn : 'CRN') + ")";
+
+						// if data.crndata, assume crn was valid
+						// else, warn invalid crn
+						if(!data.crndata) {
+							return $('.extra-credit-text').html("<span style='color:#cd3700;'>Warning:</span> You are applying extra credit to <span id='extra-credit-crn' style='color:#77e6ea;'>an invalid Course Registration Number (" + data.crn + ")</span>.")
+						}
+
+						$('.extra-credit-text').html("You are <span style='color:#7ebfea;'>applying extra credit</span> to <span id='extra-credit-crn' style='color:#77e6ea;'>" + data.crndata.crncourse + (data.crndata.crntitle && data.crndata.crninstructor ? " (" + data.crndata.crntitle + ") by " + data.crndata.crninstructor : ' (' + data.crn + ')') + "</span>.")
 
 					});
 				}
@@ -855,15 +861,29 @@ function handleServerStudentRegisterResponse(data) {
 
 			var extraCreditText = document.createElement('h1');
 			extraCreditText.className = "extra-credit-text";
-			extraCreditText.innerHTML = 'You have <span style="color:#7ebfea;">not yet selected a course</span> to apply extra credit. <span style="color:#77e6ea;">Click to begin</span>.';
+
+			// only allow extra credit if student has completed survey
+			// else show link for survey
+			if(data.entries[0].survey) {
+				extraCreditText.innerHTML = 'You have <span style="color:#7ebfea;">not yet selected a course</span> to apply extra credit. <span style="color:#77e6ea;">Click to begin</span>.';
+			} else {
+				extraCreditText.innerHTML = "You <span style='color:#7ebfea;'>must complete the Pizza My Mind survey</span> before applying your extra credit. <span style='color:#77e6ea;'>Click to begin</span>.";
+			}
 
 			// append crn text
 			divCourseInfo.appendChild(extraCreditText);
 
-			// A course has been chosen if at least
-			// one entry contains a valid CRN
-			if(data.entries[0].crn) {
-				extraCreditText.innerHTML = "You are <span style='color:#7ebfea;'>applying extra credit</span> to course <span id='extra-credit-crn' style='color:#77e6ea;'>" + data.entries[0].crn + "</span>.";
+			// A course has been chosen if at least one entry
+			// contains a CRN. Check for CRN validity.
+			if(data.entries[0].crn && data.entries[0].survey) {
+
+				// if we are here, but data.entries[0].crncourse is null, assume invalid crn
+				// else, tell chosen course information
+				if(!data.entries[0].crncourse) {
+					extraCreditText.innerHTML = "<span style='color:#cd3700;'>Warning:</span> You are applying extra credit to <span id='extra-credit-crn' style='color:#77e6ea;'>an invalid Course Registration Number (" + data.entries[0].crn + ")</span>.";
+				} else {
+					extraCreditText.innerHTML = "You are <span style='color:#7ebfea;'>applying extra credit</span> to <span id='extra-credit-crn' style='color:#77e6ea;'>" + data.entries[0].crncourse + (data.entries[0].crntitle && data.entries[0].crninstructor ? " (" + data.entries[0].crntitle + ") by " + data.entries[0].crninstructor : ' (' + data.entries[0].crn + ')') + "</span>.";
+				}
 			}
 
 			// if we made it this far, assume eligible but has not
@@ -871,11 +891,21 @@ function handleServerStudentRegisterResponse(data) {
 			// extraCreditInput.style.display = "block";
 			
 			// text event listener
-			$(extraCreditText).on('click', function() {
-				extraCreditInputShowing = true;
-				$(extraCreditInput).fadeIn('normal');
-				$(extraCreditInput).focus();
-			});
+			if(data.entries[0].survey) {
+				
+				$(extraCreditText).on('click', function() {
+					extraCreditInputShowing = true;
+					$(extraCreditInput).fadeIn('normal');
+					$(extraCreditInput).focus();
+				});
+
+			} else {
+
+				$(extraCreditText).on('click', function() {
+					showHomeSurveyPage(data.id);
+				});
+
+			}
 
 		}
 
