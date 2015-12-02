@@ -149,6 +149,8 @@ function onSocketResponse(eventName, callback) {
 var DEBUG = false;
 var DEBUG_STUDENT_ID = '00754548'//'00814189';
 
+var TIMESTAMP_END = '1449637200346'; // Wed, December 9th, 2015
+
 var DEFAULT_MAIN_OUTPUT_PLACEHOLDER = 'Enter your email';
 var PAGE_HOME = 'home';
 var PAGE_REGISTER = 'register';
@@ -862,6 +864,14 @@ function handleServerStudentRegisterResponse(data) {
 			var extraCreditText = document.createElement('h1');
 			extraCreditText.className = "extra-credit-text";
 
+			// append crn text
+			divCourseInfo.appendChild(extraCreditText);
+
+			// determine if deadline for class extra credit has been applied
+			if(Date.now() >= TIMESTAMP_END) {
+				return extraCreditText.innerHTML = '<span style="color:#cd3700;">You can no longer apply for course extra credit</span>. Please contact <span style="color:#77e6ea;">clarem@cnu.edu</span> with questions.';
+			}
+
 			// only allow extra credit if student has completed survey
 			// else show link for survey
 			if(data.entries[0].survey) {
@@ -869,9 +879,6 @@ function handleServerStudentRegisterResponse(data) {
 			} else {
 				extraCreditText.innerHTML = "You <span style='color:#7ebfea;'>must complete the Pizza My Mind survey</span> before applying your extra credit. <span style='color:#77e6ea;'>Click to begin</span>.";
 			}
-
-			// append crn text
-			divCourseInfo.appendChild(extraCreditText);
 
 			// A course has been chosen if at least one entry
 			// contains a CRN. Check for CRN validity.
