@@ -706,7 +706,7 @@ function initSocketListener() {
 		client.on('registerapistudentidsurvey', function(clientData) {
 
 		 	// fetch survey questions
-		 	mysql.query('SELECT t1.question_id,t1.question,t2.choice,t1.type FROM `surveyquestions` AS t1 LEFT JOIN `surveyquestionchoices` \
+		 	mysql.query('SELECT t1.question_id,t1.question,t2.choice,t1.type,t2.choice_id FROM `surveyquestions` AS t1 LEFT JOIN `surveyquestionchoices` \
 		 	AS t2 ON t1.question_id=t2.question_id ORDER BY t1.question_id ASC', function(err, rows) {
 
 		 		if(err) {
@@ -726,6 +726,64 @@ function initSocketListener() {
  				});
 
 		 	});
+
+		});
+
+		// client has submitted survey answers
+		client.on('registerapistudentsurveysubmit', function(clientData) {
+
+			// survey question type definitions
+			// they must match client definitions
+			var SURVEY_QUESTION_MULT_CHOICE = 1;
+			var SURVEY_QUESTION_FREE_RESP 	= 2;
+
+			// attempt to save crn
+			mysql.query('INSERT INTO `chosencourses` (crn, student_id) VALUES ("' + clientData.crn + '", "' + clientData.student_id + '") ON DUPLICATE KEY UPDATE crn="' + clientData.crn + '"', function(err) {
+				if(err) {
+	 				return console.log('SERVER', 'CLIENT', 'MYSQL', 'UPDATE->courseCRN', err);
+				}
+			});
+
+			// save all responses
+			for(var i = 0; i < clientData.entries.length; i++) {
+
+				if(clientData.entries[i].type == SURVEY_QUESTION_MULT_CHOICE) {
+					mysql.query('INSERT INTO `surveyresponses` (student_id, question_id, choice_id) VALUES("' + clientData.student_id + '", "' + clientData.entries[i].question_id + '", "' + clientData.entries[i].choice_id + '")', mysqlQueryCallback);
+				} else {
+					mysql.query('INSERT INTO `surveyresponses` (student_id, question_id, text_response) VALUES("' + clientData.student_id + '", "' + clientData.entries[i].question_id + '", "' + clientData.entries[i].response_text + '")', mysqlQueryCallback);
+				}
+
+			}
+
+			var errors = [];
+			var resultsCount = 0;
+
+			function mysqlQueryCallback(err) {
+
+				resultsCount++;
+
+				if(err) {
+		 			console.log('SERVER', 'API', 'SURVEY', err);
+					errors.push(err);
+				}
+
+				if(resultsCount == clientData.entries.length) {
+
+					if(errors.length) {
+						return client.emit('registerapistudentsurveysubmitresponse', {
+			 				error: true,
+			 				message: errors[0],
+			 				student_id: clientData.student_id,
+			 			});
+					}
+
+					client.emit('registerapistudentsurveysubmitresponse', {
+	 					student_id: clientData.student_id
+	 				});
+
+				}
+
+			}
 
 		});
 

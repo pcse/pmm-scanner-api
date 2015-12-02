@@ -67,6 +67,13 @@ if(socket) {
 		}
 	});
 
+	// client has requested submission of survey questions
+	socket.on('registerapistudentsurveysubmitresponse', function(data) {
+		for(var i = 0; i < response_callbacks['registerapistudentsurveysubmitresponse'].length; i++) {
+			response_callbacks['registerapistudentsurveysubmitresponse'][i].call(this, data);
+		}
+	});
+
 }
 
 /**
@@ -225,6 +232,22 @@ if(DEBUG) {
 	showHomeSurveyPage(DEBUG_STUDENT_ID);
 }
 
+// define general user action-driven callback functions
+
+/**
+ * Adds callback function to stack, to be called any time the submit button
+ * on the survey page is pressed
+ */
+function callbackOnSurveySubmitButtonPressed(callback) {
+
+	if(!callbackOnSurveySubmitButtonPressed.callbacks) {
+		callbackOnSurveySubmitButtonPressed.callbacks = [];
+	}
+
+	callbackOnSurveySubmitButtonPressed.callbacks.push(callback);
+
+}
+
 function handleURL(urlPieces) {
 
 	isMainPage = false;
@@ -346,6 +369,32 @@ function handleAdminAuthentication() {
 
 	mainInput.value = '';
 	mainInput.placeholder = 'Enter your API key';
+
+}
+
+// display alert message
+function showAlert(text) {
+
+	if(!showAlert.container) {
+
+		showAlert.container = document.createElement('div');
+		showAlert.container.className = 'alert-banner-top';
+
+		$(showAlert.container).on('click', function() {
+			clearTimeout(showAlert.container.timeout);
+			$(this).fadeOut();
+		});
+
+		document.body.appendChild(showAlert.container);
+	}
+
+	$(showAlert.container).fadeIn();
+	showAlert.container.innerHTML = text;
+
+	clearTimeout(showAlert.container.timeout);
+	showAlert.container.timeout = setTimeout(function() {
+		$(showAlert.container).fadeOut();
+	}, 8700);
 
 }
 
@@ -866,7 +915,14 @@ function handleServerStudentRegisterSurveyResponse(data) {
 			}
 		}
 
-		questions[data.entries[i].question_id].choices.push(data.entries[i].choice);
+		if(!data.entries[i].choice || !data.entries[i].choice_id) {
+			continue;
+		}
+
+		questions[data.entries[i].question_id].choices.push({
+			text: data.entries[i].choice,
+			choice_id: data.entries[i].choice_id
+		});
 
 	}
 
@@ -905,7 +961,8 @@ function handleServerStudentRegisterSurveyResponse(data) {
 				var surveyQuestionChoice = document.createElement('span');
 				surveyQuestionChoice.className = 'question_choice';
 				surveyQuestionChoice.question_index = parsedQuestions.length - 1;
-				surveyQuestionChoice.innerHTML = questions[i].choices[x];
+				surveyQuestionChoice.choice_id = questions[i].choices[x].choice_id;
+				surveyQuestionChoice.innerHTML = questions[i].choices[x].text;
 				
 				$(surveyQuestionChoice).on('click', function() {
 
@@ -916,13 +973,31 @@ function handleServerStudentRegisterSurveyResponse(data) {
 
 					this.style.backgroundColor = '#9ea2ff';
 					this.style.color = 'rgb(0,5,108)';
-					parsedQuestions[this.question_index].response = this.innerHTML;
+
+					parsedQuestions[this.question_index].answered = true;
+					parsedQuestions[this.question_index].response_text = this.innerHTML;
+					parsedQuestions[this.question_index].choice_id = this.choice_id;
 				});
 
 				surveyQuestionBody.appendChild(surveyQuestionChoice);
 			}
 
 		} else if(questions[i].type == SURVEY_QUESTION_FREE_RESP) {
+
+			var surveyQuestionTextArea = document.createElement('textarea');
+			surveyQuestionTextArea.className = 'question_text';
+			surveyQuestionTextArea.question_index = parsedQuestions.length - 1;
+			surveyQuestionTextArea.placeholder = 'Please type your answer here.';
+			surveyQuestionTextArea.value = 'Please type your answer here.';
+
+			callbackOnSurveySubmitButtonPressed(function() {
+				
+				var question = this;
+				parsedQuestions[this.question_index].response_text = this.value;
+
+			}.bind(surveyQuestionTextArea));
+
+			surveyQuestionBody.appendChild(surveyQuestionTextArea);
 
 		}
 
@@ -932,8 +1007,98 @@ function handleServerStudentRegisterSurveyResponse(data) {
 	}
 
 	resultsContent.appendChild(questionsContainer);
-	console.log(parsedQuestions);
 
+	// manually append last question asking for CRN
+	var crnQuestion = document.createElement('div');
+	crnQuestion.className = 'survey-question';
+
+	var crnQuestionHeader = document.createElement('span');
+	crnQuestionHeader.className = 'question_header';
+	crnQuestionHeader.innerHTML = '<span class="question_num">' + (parsedQuestions.length + 1) + '.</span> ';
+	crnQuestionHeader.innerHTML += '<span class="question_title">Please enter the <b>CRN</b> (Course Registration Number) of the course you would like to apply your extra credit to below.</span>';
+
+	var crnQuestionBody = document.createElement('span');
+	crnQuestionBody.className = 'question_body';
+
+	var crnQuestionInput = document.createElement('input');
+	crnQuestionInput.className = 'question_text_input';
+	crnQuestionInput.placeholder = 'Please type your CRN here.';
+
+	crnQuestionBody.appendChild(crnQuestionInput);
+	crnQuestion.appendChild(crnQuestionHeader);
+	crnQuestion.appendChild(crnQuestionBody);
+	questionsContainer.appendChild(crnQuestion);
+
+
+	// append submit button
+	var submitButton = document.createElement('div');
+	submitButton.className = 'submit-button';
+	submitButton.innerHTML = '<span>Submit Survey</span>';
+	resultsContent.appendChild(submitButton);
+
+	// add callback to submit button to check if all answers have been answered
+	callbackOnSurveySubmitButtonPressed(function(submitButton) {
+
+		var allQuestionsAnswered = true;
+
+		for(var i = 0; i < parsedQuestions.length; i++) {
+			if(parsedQuestions[i].type == SURVEY_QUESTION_MULT_CHOICE && !parsedQuestions[i].answered) {
+				allQuestionsAnswered = false;
+				break;
+			}
+		}
+
+		// make sure all multiple-choice questions have been answered
+		// and a valid course registration number has been provided
+		if(!allQuestionsAnswered) {
+			submitButton.hasBeenClicked = false;
+			return showAlert('Please answer all questions before pressing submit.');
+		} else if(!crnQuestionInput.value || !crnQuestionInput.value.match(/^[0-9]{4}$/gi)) {
+			submitButton.hasBeenClicked = false;
+			return showAlert('Please provide a valid Course Registration Number!');
+		}
+
+		submitButton.innerHTML = '<span>Loading, please wait...</span>';
+
+		// if we have made it this far, assume everything is good to go
+		socket.emit('registerapistudentsurveysubmit', {
+			crn: crnQuestionInput.value,
+			entries: parsedQuestions,
+			student_id: data.id
+		});
+
+		////-- I am here, I am done with the client side, make sure Clare can download survey results
+		// BEFORE though, make sure to offer survey instead of CRN if no answers by student are found
+		// SELECT t1.student_id,t2.question,t3.choice,t1.text_response,t2.type FROM `surveyresponses` AS t1 LEFT JOIN `surveyquestions` AS t2 ON t1.question_id=t2.question_id // LEFT JOIN `surveyquestionchoices` AS t3 ON t1.choice_id=t3.choice_id
+
+	}.bind(submitButton));
+
+	$(submitButton).on('click', function() {
+
+		// do not allow more than one click
+		if(this.hasBeenClicked) {
+			return;
+		}
+
+		this.hasBeenClicked = true;
+
+		// iterate through all submit button callbacks
+		for(var i = 0; i < callbackOnSurveySubmitButtonPressed.callbacks.length; i++) {
+			callbackOnSurveySubmitButtonPressed.callbacks[i].call(null, this);
+		}
+
+	});
+
+	// handle server response
+	onSocketResponse('registerapistudentsurveysubmitresponse', function(data) {
+
+		if(data.error) {
+			return showAlert('An error ocurred submitting your survey responses. Please contact clarem@cnu.edu regarding this issue.');
+		}
+
+		showHomeResultsPage(data.student_id);
+		showAlert('Thank you for your feedback! Your answers have been recorded.'); ////--
+	});
 }
 
 /**
