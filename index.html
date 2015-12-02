@@ -396,7 +396,7 @@ function showAlert(text) {
 	clearTimeout(showAlert.container.timeout);
 	showAlert.container.timeout = setTimeout(function() {
 		$(showAlert.container).fadeOut();
-	}, 8700);
+	}, 100000);
 
 }
 
@@ -1025,7 +1025,6 @@ function handleServerStudentRegisterSurveyResponse(data) {
 			surveyQuestionTextArea.className = 'question_text';
 			surveyQuestionTextArea.question_index = parsedQuestions.length - 1;
 			surveyQuestionTextArea.placeholder = 'Please type your answer here.';
-			surveyQuestionTextArea.value = 'Please type your answer here.';
 
 			callbackOnSurveySubmitButtonPressed(function() {
 				
