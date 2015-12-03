@@ -1086,6 +1086,7 @@ function handleServerStudentRegisterSurveyResponse(data) {
 
 			var surveyQuestionTextArea = document.createElement('textarea');
 			surveyQuestionTextArea.className = 'question_text';
+			surveyQuestionTextArea.maxLength = '400';
 			surveyQuestionTextArea.question_index = parsedQuestions.length - 1;
 			surveyQuestionTextArea.placeholder = 'Please type your answer here.';
 
