@@ -528,11 +528,43 @@ function initSocketListener() {
 			csvStream.pipe(stream);
 
 			for(var i = 0; i < data.entries.length; i++) {
-				data.entries[i].events = data.entries[i].events.length;
+
+				if(data.entries[i].events) {
+					data.entries[i].events = data.entries[i].events.length;
+				}
+
 				csvStream.write(data.entries[i]);
 			}
 
 			csvStream.end();
+
+		});
+
+		// admin has requested survey data
+		client.on('registerapiadminsurveydata', function() {
+
+			mysql.query('SELECT t1.student_id,t4.last AS student_last,t4.first AS student_first,t4.major AS \
+				student_major,t4.email AS student_email, t2.question,t3.choice,t1.text_response,t2.type FROM \
+				`surveyresponses` AS t1 LEFT JOIN `surveyquestions` AS t2 ON t1.question_id=t2.question_id \
+				LEFT JOIN `surveyquestionchoices` AS t3 ON t1.choice_id=t3.choice_id LEFT JOIN `students` \
+				AS t4 ON t1.student_id=t4.student_id', function(err, rows) {
+
+				if(err) {
+
+					client.emit('registerapiadminsurveydataresponse', {
+		 				entries: [],
+		 				error: true,
+		 				message: err.toString()
+		 			});
+
+ 					return console.log('SERVER', 'CLIENT', 'MYSQL', err);
+				}
+
+				client.emit('registerapiadminsurveydataresponse', {
+		 			entries: rows
+		 		});
+		 		
+			});
 
 		});
 

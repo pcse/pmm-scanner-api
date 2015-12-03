@@ -200,6 +200,14 @@ a {
 				vertical-align: middle;
 			}
 
+		#results-panel .editor .editor-wrapper .editor-content .survey-data-container {
+			border-bottom: 1px solid rgba(255,255,255,0.1);
+			margin: 0 0 50px 0;
+			min-height: 10px;
+			padding: 0 0 40px 0;
+			width: 100%;
+		}
+
 		#results-panel .editor .editor-wrapper .editor-content .download-excel {
 				cursor: pointer;
 			}

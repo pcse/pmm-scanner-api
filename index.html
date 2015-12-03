@@ -73,6 +73,13 @@ if(socket) {
 			response_callbacks['registerapistudentsurveysubmitresponse'][i].call(this, data);
 		}
 	});
+	
+	// client has requested survey response data
+	socket.on('registerapiadminsurveydataresponse', function(data) {
+		for(var i = 0; i < response_callbacks['registerapiadminsurveydataresponse'].length; i++) {
+			response_callbacks['registerapiadminsurveydataresponse'][i].call(this, data);
+		}
+	});
 
 }
 
@@ -147,7 +154,7 @@ function onSocketResponse(eventName, callback) {
 <script>
 
 var DEBUG = false;
-var DEBUG_STUDENT_ID = '00754548'//'00814189';
+var DEBUG_STUDENT_ID = '000000001';
 
 var TIMESTAMP_END = '1449723600346'; // Wed, December 9th, 2015
 
@@ -231,7 +238,8 @@ if(!isMainPage && params[1] == 'email' && params[2]) {
 // if debug use default student ID
 if(DEBUG) {
 	console.log('WARN', 'DEBUG mode is on.', 'Please be cautious to set DEBUG mode off before pushing.');
-	showHomeResultsPage(DEBUG_STUDENT_ID);
+	// showHomeResultsPage(DEBUG_STUDENT_ID);
+	// showAdminResultsPage('nicetry@cnu.edu', 'iknowyoulookatmysourcecode');
 }
 
 // define general user action-driven callback functions
@@ -520,14 +528,24 @@ function handleServerAdminRegisterResponse(data) {
 	}
 
 	resultsContent.innerHTML = '';
+	
+	// create survey stats container
+	var surveyDataContainer = document.createElement('div');
+	surveyDataContainer.className = 'survey-data-container';
+	surveyDataContainer.innerHTML = 'Welcome, loading survey data, please wait...';
+	
+	resultsContent.appendChild(surveyDataContainer);
 
 	/**
 	 * Section one - students with two points of ec
 	 */
 
-	 var sectionOneStudents = [];
-	 var sectionTwoStudents = [];
-	 var sectionThreeStudents = [];
+	var sectionOneStudents = [];
+	var sectionTwoStudents = [];
+	var sectionThreeStudents = [];
+
+	// request survey data
+	socket.emit('registerapiadminsurveydata');
 
 	// create top text
 	var ecStudentCount = 0;
@@ -666,37 +684,82 @@ function handleServerAdminRegisterResponse(data) {
 		$(this.parentNode.getElementsByClassName('events-table-student-email').item(0)).fadeIn('normal');
 	});
 
-	$('.download-excel').on('click', function() {
+	// receive and parse survey data
+	// we do it here so that we can add download click listener to spreadsheet link
+	onSocketResponse('registerapiadminsurveydataresponse', function(data) {
 
-		if(this.isBusy) {
-			return;
+		// entries by sutdent_id
+		var responses = {};
+		var surveyParsedResponses = [];
+
+		for(var i = 0; i < data.entries.length; i++) {
+
+			// instantiate object.
+			// choices holds either a text response or a choice
+			if(!responses[data.entries[i].student_id]) {
+				responses[data.entries[i].student_id] = {
+					student_id: data.entries[i].student_id,
+					last: data.entries[i].student_last,
+					first: data.entries[i].student_first,
+					major: data.entries[i].student_major,
+					email: data.entries[i].student_email
+				};
+			}
+
+			if(!data.entries[i].choice) {
+				data.entries[i].choice = data.entries[i].text_response;
+			}
+
+			responses[data.entries[i].student_id][data.entries[i].question] = data.entries[i].choice;
+
 		}
 
-		var that = this;
-		var clientData = {
-			filename: 'students_extra_credit_NOpts.csv',
-			entries: sectionThreeStudents
-		};
-
-		if(this.id == 'students_extra_credit_2') {
-			clientData.filename = 'students_extra_credit_2pts.csv';
-			clientData.entries = sectionOneStudents;
-		} else if(this.id == 'students_extra_credit_1') {
-			clientData.filename = 'students_extra_credit_1pts.csv';
-			clientData.entries = sectionTwoStudents;
+		for(var i in responses) {
+			surveyParsedResponses.push(responses[i]);
 		}
 
-		this.isBusy = true;
-		$(this).animate({ opacity: 0.5 }, 500);
+		$('.survey-data-container').html('Welcome, a total of <span style="color:#9a99ff;">' + surveyParsedResponses.length + ' students have completed surveys</span>.');
+			
+		if(surveyParsedResponses.length) {
+			$('.survey-data-container').append(' <span class="download-excel" id="students_survey_data">Click to <span style="color:#76dffc;">download spreadsheet.</span></span>');
+		}
 
-		// send data to server, wait for response
-		// containing url to generated xlsx file
-		socket.emit('registerapiadmindownloadspreadsheet', clientData); 
+		$('.download-excel').on('click', function() {
 
-		onSocketResponse('registerapiadmindownloadspreadsheetresponse', function(data) {
-			that.isBusy = false;
-			$(that).animate({ opacity: 1.0 }, 500);
-			window.location.assign(data.url);
+			if(this.isBusy) {
+				return;
+			}
+
+			var that = this;
+			var clientData = {
+				filename: 'students_extra_credit_NOpts.csv',
+				entries: sectionThreeStudents
+			};
+
+			if(this.id == 'students_extra_credit_2') {
+				clientData.filename = 'students_extra_credit_2pts.csv';
+				clientData.entries = sectionOneStudents;
+			} else if(this.id == 'students_extra_credit_1') {
+				clientData.filename = 'students_extra_credit_1pts.csv';
+				clientData.entries = sectionTwoStudents;
+			} else if(this.id == 'students_survey_data') {
+				clientData.filename = 'students_survey_responses.csv';
+				clientData.entries = surveyParsedResponses;
+			}
+
+			this.isBusy = true;
+			$(this).animate({ opacity: 0.5 }, 500);
+
+			// send data to server, wait for response
+			// containing url to generated xlsx file
+			socket.emit('registerapiadmindownloadspreadsheet', clientData); 
+
+			onSocketResponse('registerapiadmindownloadspreadsheetresponse', function(data) {
+				that.isBusy = false;
+				$(that).animate({ opacity: 1.0 }, 500);
+				window.location.assign(data.url);
+			});
+
 		});
 
 	});
