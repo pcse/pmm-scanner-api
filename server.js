@@ -540,7 +540,7 @@ function initSocketListener() {
 
 		});
 
-		// admin has requested survey data
+		// admin has requested survey and extra credit data
 		client.on('registerapiadminsurveydata', function() {
 
 			mysql.query('SELECT t1.student_id,t4.last AS student_last,t4.first AS student_first,t4.major AS \
@@ -560,10 +560,31 @@ function initSocketListener() {
  					return console.log('SERVER', 'CLIENT', 'MYSQL', err);
 				}
 
-				client.emit('registerapiadminsurveydataresponse', {
-		 			entries: rows
-		 		});
-		 		
+				// fetch extra credit and append it to survey data response
+				mysql.query('SELECT t1.crn, t3.course, t3.section, t3.instructor, t1.student_id, t2.last, \
+					t2.first, t2.year, t2.email FROM `chosencourses` AS t1 INNER JOIN `students` AS t2 \
+					ON t1.student_id=t2.student_id LEFT JOIN `coursedata` AS t3 ON t1.crn=t3.crn', function(ecErr, ecRows) {
+
+					if(ecErr) {
+
+						client.emit('registerapiadminsurveydataresponse', {
+			 				entries: [],
+			 				error: true,
+			 				message: ecErr.toString()
+			 			});
+
+	 					return console.log('SERVER', 'CLIENT', 'MYSQL', err);
+
+					}
+
+						
+					client.emit('registerapiadminsurveydataresponse', {
+		 				entries: rows,
+		 				ecEntries: ecRows
+		 			});
+
+				});
+
 			});
 
 		});

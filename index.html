@@ -239,7 +239,7 @@ if(!isMainPage && params[1] == 'email' && params[2]) {
 if(DEBUG) {
 	console.log('WARN', 'DEBUG mode is on.', 'Please be cautious to set DEBUG mode off before pushing.');
 	// showHomeResultsPage(DEBUG_STUDENT_ID);
-	// showAdminResultsPage('nicetry@cnu.edu', 'iknowyoulookatmysourcecode');
+	showAdminResultsPage('nicetry@lol.right', 'guesswhyitsnotinplaintext');
 }
 
 // define general user action-driven callback functions
@@ -529,9 +529,18 @@ function handleServerAdminRegisterResponse(data) {
 
 	resultsContent.innerHTML = '';
 	
+	// create extra credit stats container
+	var extraCreditStatsContainer = document.createElement('div');
+	extraCreditStatsContainer.className = 'survey-data-container';
+	extraCreditStatsContainer.id = 'extra-credit-data-container';
+	extraCreditStatsContainer.innerHTML = 'Welcome, loading extra credit data, please wait...';
+	
+	resultsContent.appendChild(extraCreditStatsContainer);
+
 	// create survey stats container
 	var surveyDataContainer = document.createElement('div');
 	surveyDataContainer.className = 'survey-data-container';
+	surveyDataContainer.id = 'survey-data-container';
 	surveyDataContainer.innerHTML = 'Welcome, loading survey data, please wait...';
 	
 	resultsContent.appendChild(surveyDataContainer);
@@ -684,7 +693,7 @@ function handleServerAdminRegisterResponse(data) {
 		$(this.parentNode.getElementsByClassName('events-table-student-email').item(0)).fadeIn('normal');
 	});
 
-	// receive and parse survey data
+	// receive and parse survey and extra credit data
 	// we do it here so that we can add download click listener to spreadsheet link
 	onSocketResponse('registerapiadminsurveydataresponse', function(data) {
 
@@ -718,10 +727,17 @@ function handleServerAdminRegisterResponse(data) {
 			surveyParsedResponses.push(responses[i]);
 		}
 
-		$('.survey-data-container').html('Welcome, a total of <span style="color:#9a99ff;">' + surveyParsedResponses.length + ' students have completed surveys</span>.');
+		// Append extra credit container information here as well. This is so that the click
+		// event listener is applied to all links, regardless of which one loads first.
+		$('#extra-credit-data-container').html('Welcome, A total of <span style="color:#9a99ff;">' + data.ecEntries.length + ' students have chosen a course</span> for their extra credit.');
+		$('#survey-data-container').html('A total of <span style="color:#9a99ff;">' + surveyParsedResponses.length + ' students have completed surveys</span>.');
 			
 		if(surveyParsedResponses.length) {
-			$('.survey-data-container').append(' <span class="download-excel" id="students_survey_data">Click to <span style="color:#76dffc;">download spreadsheet.</span></span>');
+			$('#survey-data-container').append(' <span class="download-excel" id="students_survey_data">Click to <span style="color:#76dffc;">download spreadsheet.</span></span>');
+		}
+
+		if(data.ecEntries.length) {
+			$('#extra-credit-data-container').append(' <span class="download-excel" id="students_extracredit_data">Click to <span style="color:#76dffc;">download spreadsheet.</span></span>');
 		}
 
 		$('.download-excel').on('click', function() {
@@ -745,6 +761,9 @@ function handleServerAdminRegisterResponse(data) {
 			} else if(this.id == 'students_survey_data') {
 				clientData.filename = 'students_survey_responses.csv';
 				clientData.entries = surveyParsedResponses;
+			} else if(this.id == 'students_extracredit_data') {
+				clientData.filename = 'students_extracredit_responses.csv';
+				clientData.entries = data.ecEntries;
 			}
 
 			this.isBusy = true;
@@ -1166,10 +1185,6 @@ function handleServerStudentRegisterSurveyResponse(data) {
 			entries: parsedQuestions,
 			student_id: data.id
 		});
-
-		////-- I am here, I am done with the client side, make sure Clare can download survey results
-		// BEFORE though, make sure to offer survey instead of CRN if no answers by student are found
-		// SELECT t1.student_id,t2.question,t3.choice,t1.text_response,t2.type FROM `surveyresponses` AS t1 LEFT JOIN `surveyquestions` AS t2 ON t1.question_id=t2.question_id // LEFT JOIN `surveyquestionchoices` AS t3 ON t1.choice_id=t3.choice_id
 
 	}.bind(submitButton));
 
