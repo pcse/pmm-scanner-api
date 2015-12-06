@@ -544,7 +544,7 @@ function initSocketListener() {
 		client.on('registerapiadminsurveydata', function() {
 
 			mysql.query('SELECT t1.student_id,t4.last AS student_last,t4.first AS student_first,t4.major AS \
-				student_major,t4.email AS student_email, t2.question,t3.choice,t1.text_response,t2.type FROM \
+				student_major,t4.email AS student_email,t2.question_id,t2.question,t3.choice,t3.choice_id,t1.text_response,t2.type FROM \
 				`surveyresponses` AS t1 LEFT JOIN `surveyquestions` AS t2 ON t1.question_id=t2.question_id \
 				LEFT JOIN `surveyquestionchoices` AS t3 ON t1.choice_id=t3.choice_id LEFT JOIN `students` \
 				AS t4 ON t1.student_id=t4.student_id', function(err, rows) {

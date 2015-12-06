@@ -239,7 +239,7 @@ if(!isMainPage && params[1] == 'email' && params[2]) {
 if(DEBUG) {
 	console.log('WARN', 'DEBUG mode is on.', 'Please be cautious to set DEBUG mode off before pushing.');
 	// showHomeResultsPage(DEBUG_STUDENT_ID);
-	showAdminResultsPage('nicetry@lol.right', 'guesswhyitsnotinplaintext');
+	// showAdminResultsPage('nicetry@cnu.edu', 'thatllbefine');
 }
 
 // define general user action-driven callback functions
@@ -697,15 +697,49 @@ function handleServerAdminRegisterResponse(data) {
 	// we do it here so that we can add download click listener to spreadsheet link
 	onSocketResponse('registerapiadminsurveydataresponse', function(data) {
 
+		var surveyResponseCount = 0;
+
 		// entries by sutdent_id
 		var responses = {};
 		var surveyParsedResponses = [];
 
+		var surveyQuestions = {};
+		var surveyChoiceStats = {};
+
+		// populate questions array
+
 		for(var i = 0; i < data.entries.length; i++) {
+
+			// save unique survey questions for later use
+			if(!surveyQuestions[data.entries[i].question_id]) {
+				surveyQuestions[data.entries[i].question_id] = {
+					question_id: data.entries[i].question_id,
+					question: data.entries[i].question,
+					responses: []
+				}
+			}
+
+			// parse response stats
+			if(data.entries[i].choice_id) {
+				if(!surveyChoiceStats[data.entries[i].choice_id]) {
+					surveyChoiceStats[data.entries[i].choice_id] = {
+						count: 0,
+						text: data.entries[i].choice,
+						question: data.entries[i].question,
+						question_id: data.entries[i].question_id,
+						percent: 0.0
+					}
+				}
+
+				surveyChoiceStats[data.entries[i].choice_id].count++;
+			}
 
 			// instantiate object.
 			// choices holds either a text response or a choice
 			if(!responses[data.entries[i].student_id]) {
+
+				surveyResponseCount++;
+
 				responses[data.entries[i].student_id] = {
 					student_id: data.entries[i].student_id,
 					last: data.entries[i].student_last,
@@ -723,6 +757,45 @@ function handleServerAdminRegisterResponse(data) {
 
 		}
 
+		// populate responses
+		for(var i in surveyChoiceStats) {
+			surveyQuestions[surveyChoiceStats[i].question_id].responses.push(surveyChoiceStats[i]);
+		}
+
+		// get longest question response count
+		var surveyQuestionResultMaxCount = 0;
+		for(var i in surveyQuestions) {
+			if(surveyQuestions[i].responses.length > surveyQuestionResultMaxCount) {
+				surveyQuestionResultMaxCount = surveyQuestions[i].responses.length;
+			}
+		}
+
+		// populate the first four rows of our results with stats for each
+		// question's choices
+		for(var x = 0; x < surveyQuestionResultMaxCount + 1; x++) {
+
+			var surveyParsedResponsesStats = {
+				student_id: '',
+				last: '',
+				first: '',
+				major: '',
+				email: ''
+			}
+
+			for(var i in surveyQuestions) {
+
+				if(!surveyQuestions[i].responses.length || !surveyQuestions[i].responses[x]) {
+					surveyParsedResponsesStats[surveyQuestions[i].question] = '';
+					continue;
+				}
+
+				surveyParsedResponsesStats[surveyQuestions[i].question] = surveyQuestions[i].responses[x].text + '  (' + surveyQuestions[i].responses[x].count + ' students) [' + parseInt(surveyQuestions[i].responses[x].count / surveyResponseCount * 100) + '%]';
+			}
+
+			surveyParsedResponses.push(surveyParsedResponsesStats);
+		}
+
+		// save actual responses
 		for(var i in responses) {
 			surveyParsedResponses.push(responses[i]);
 		}
@@ -730,7 +803,7 @@ function handleServerAdminRegisterResponse(data) {
 		// Append extra credit container information here as well. This is so that the click
 		// event listener is applied to all links, regardless of which one loads first.
 		$('#extra-credit-data-container').html('Welcome, A total of <span style="color:#9a99ff;">' + data.ecEntries.length + ' students have chosen a course</span> for their extra credit.');
-		$('#survey-data-container').html('A total of <span style="color:#9a99ff;">' + surveyParsedResponses.length + ' students have completed surveys</span>.');
+		$('#survey-data-container').html('A total of <span style="color:#9a99ff;">' + surveyResponseCount + ' students have completed surveys</span>.');
 			
 		if(surveyParsedResponses.length) {
 			$('#survey-data-container').append(' <span class="download-excel" id="students_survey_data">Click to <span style="color:#76dffc;">download spreadsheet.</span></span>');
@@ -740,6 +813,8 @@ function handleServerAdminRegisterResponse(data) {
 			$('#extra-credit-data-container').append(' <span class="download-excel" id="students_extracredit_data">Click to <span style="color:#76dffc;">download spreadsheet.</span></span>');
 		}
 
+		// append event listener here since these links are
+		// the last one to load
 		$('.download-excel').on('click', function() {
 
 			if(this.isBusy) {
