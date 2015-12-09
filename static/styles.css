@@ -218,9 +218,16 @@ a {
 			#results-panel .editor .editor-wrapper .editor-content .extra-credit-text {
 				cursor: pointer;
 			}
+				#results-panel .editor .editor-wrapper .editor-content .extra-credit-text.no-underline {
+					cursor: default;
+				}
+
 				#results-panel .editor .editor-wrapper .editor-content .extra-credit-text:hover {
 					text-decoration: underline;
 				}
+					#results-panel .editor .editor-wrapper .editor-content .extra-credit-text.no-underline:hover {
+						text-decoration: none;
+					}
 			
 			#results-panel .editor .editor-wrapper .editor-content .extra-credit-input {
 				background: black;
