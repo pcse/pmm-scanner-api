@@ -163,7 +163,7 @@ function onSocketResponse(eventName, callback) {
 var DEBUG = false;
 var DEBUG_STUDENT_ID = '000000001';
 
-var TIMESTAMP_END = '1449810000346'; // Wed, December 9th, 2015
+var TIMESTAMP_END = '1449896400346'; // Friday, Midnight 11th, 2015
 
 var DEFAULT_MAIN_OUTPUT_PLACEHOLDER = 'Enter your email';
 var PAGE_HOME = 'home';
@@ -361,6 +361,7 @@ function handleAdminAuthentication() {
 			// reset admin input
 			mainInput.valueAdminEmail 	= null;
 			mainInput.valueAdminHashKey = null;
+			mainInput.type 				= 'text';
 
 			return;
 		}
@@ -386,6 +387,7 @@ function handleAdminAuthentication() {
 
 	mainInput.value = '';
 	mainInput.placeholder = 'Enter your API key';
+	mainInput.type = 'password';
 
 }
 
@@ -899,14 +901,23 @@ function handleServerStudentRegisterResponse(data) {
 		return id.replace(/\_/gi, '\/');
 	}
 
-	if(data && data.entries.length) {
+	// valid entries are ones with non null student ids
+	var validEntryCount = 0;
+
+	for(var i = 0; i < data.entries.length; i++) {
+		if(!data.entries[i].id) {
+			continue;
+		}
+		validEntryCount++;
+	}
+
+	if(data && validEntryCount) {
 
 		var fullName = 'stranger';
 
-		// populate first and last name if possible
-		if(data.entries[0].first && data.entries[0].last) {
-			fullName = data.entries[0].first + ' ' + data.entries[0].last;
-		}
+		// holds student information of first
+		// non null entry returned with student data
+		var dataReference = data.entries[0];
 
 		// if we got this far, we have made a request for student data after receiving
 		// zero event records last time
@@ -921,9 +932,9 @@ function handleServerStudentRegisterResponse(data) {
 		var plural = 's';
 		var evtPlural = 's';
 
-		if(data.entries.length >= 8) {
+		if(validEntryCount >= 8) {
 			extraCredit = 1;
-			if(data.entries.length >= 12) {
+			if(validEntryCount >= 12) {
 				extraCredit = 2;
 			}
 		}
@@ -932,11 +943,11 @@ function handleServerStudentRegisterResponse(data) {
 			plural = '';
 		}
 
-		if(data.entries.length == 1) {
+		if(validEntryCount == 1) {
 			evtPlural = '';
 		}
 
-		resultsContent.innerHTML = '<h1>Welcome, you have been to <span style="color:rgb(189,198,224);font-weight:bold;">' + data.entries.length + ' event' + evtPlural + '</span> this semester and qualify for <span style="color:rgb(224,189,215);font-weight:bold;">' + extraCredit + ' point' + plural + ' of extra credit</span> in any eligible course.</h1>';
+		resultsContent.innerHTML = '<h1>Welcome, you have been to <span style="color:rgb(189,198,224);font-weight:bold;">' + validEntryCount + ' event' + evtPlural + '</span> this semester and qualify for <span style="color:rgb(224,189,215);font-weight:bold;">' + extraCredit + ' point' + plural + ' of extra credit</span> in any eligible course.</h1>';
 
 		resultsContent.appendChild(divCourseInfo);
 
@@ -945,14 +956,27 @@ function handleServerStudentRegisterResponse(data) {
 		table.className = 'events-table';
 		table.border = '0';
 
+		// if non-null data is found, populate corresponding
+		// variables with it for later use
 		for(var i = 0; i < data.entries.length; i++) {
+
+			if(!dataReference.id && data.entries[i].id) {
+				dataReference = data.entries[i];
+			}
+
 			var tr = document.createElement('tr');
 			var color = randomColor({
 				luminosity: 'light',
 				hue: 'blue'
 			});
+
+			if(!data.entries[i].id) {
+				color = 'rgba(255,255,255,0.25)';
+			}
+			
 			tr.innerHTML = '<td style="color:' + color + ';">' + tableIdToDate(data.entries[i].event_id) + '</td>';
 			tr.innerHTML += '<td style="text-align:right;color:' + color + ';">' + data.entries[i].event_name + '</td>';
+
 			table.appendChild(tr);
 		}
 
@@ -963,12 +987,12 @@ function handleServerStudentRegisterResponse(data) {
 
 		// populate information on course chosen by student
 		// only if student is eligible for bonus points
-		if(data.entries.length >= 8) {
+		if(validEntryCount >= 8) {
 
 			var extraCreditInput = document.createElement('input');
 			extraCreditInput.type = "text";
 			extraCreditInput.className = "extra-credit-input";
-			extraCreditInput.placeholder = "Enter a Course Registration Number (" + (data.entries[0].crn ? data.entries[0].crn : 'CRN') + ")";
+			extraCreditInput.placeholder = "Enter a Course Registration Number (" + (dataReference.crn ? dataReference.crn : 'CRN') + ")";
 
 			// add input keydown event handler
 			$(extraCreditInput).on('keydown', function(key) {
@@ -983,7 +1007,7 @@ function handleServerStudentRegisterResponse(data) {
 
 					// assume valid crn was entered
 					var crn = this.value;
-					var old_crn = data.entries[0].crn;
+					var old_crn = dataReference.crn;
 					this.value = '';
 					this.placeholder = "Enter a Course Registration Number (" + (old_crn ? old_crn : 'CRN') + ")";
 
@@ -1033,41 +1057,43 @@ function handleServerStudentRegisterResponse(data) {
 
 			// only allow extra credit if student has completed survey
 			// else show link for survey
-			if(data.entries[0].survey) {
+			if(dataReference.survey) {
 				extraCreditText.innerHTML = 'You have <span style="color:#7ebfea;">not yet selected a course</span> to apply extra credit.';
 			} else {
 				extraCreditText.innerHTML = "You <span style='color:#7ebfea;'>must complete the Pizza My Mind survey</span> before applying your extra credit.";
 			}
 
-			if(Date.now() < TIMESTAMP_END) {
+			if(!TIMESTAMP_END || Date.now() < TIMESTAMP_END) {
 				extraCreditText.innerHTML += " <span style='color:#77e6ea;'>Click to begin</span>.";
 			}
 
 			// A course has been chosen if at least one entry
 			// contains a CRN. Check for CRN validity.
-			if(data.entries[0].crn && data.entries[0].survey) {
+			if(dataReference.crn && dataReference.survey) {
 
 				// if we are here, but data.entries[0].crncourse is null, assume invalid crn
 				// else, tell chosen course information
-				if(!data.entries[0].crncourse) {
-					extraCreditText.innerHTML = "<span style='color:#cd3700;'>Warning:</span> You are applying extra credit to <span id='extra-credit-crn' style='color:#77e6ea;'>an invalid Course Registration Number (" + data.entries[0].crn + ")</span>.";
+				if(!dataReference.crncourse) {
+					extraCreditText.innerHTML = "<span style='color:#cd3700;'>Warning:</span> You are applying extra credit to <span id='extra-credit-crn' style='color:#77e6ea;'>an invalid Course Registration Number (" + dataReference.crn + ")</span>.";
 				} else {
-					extraCreditText.innerHTML = "You are <span style='color:#7ebfea;'>applying extra credit</span> to <span id='extra-credit-crn' style='color:#77e6ea;'>" + data.entries[0].crncourse + (data.entries[0].crntitle && data.entries[0].crninstructor ? " (" + data.entries[0].crntitle + ") by " + data.entries[0].crninstructor : ' (' + data.entries[0].crn + ')') + "</span>.";
+					extraCreditText.innerHTML = "You are <span style='color:#7ebfea;'>applying extra credit</span> to <span id='extra-credit-crn' style='color:#77e6ea;'>" + dataReference.crncourse + (dataReference.crntitle && dataReference.crninstructor ? " (" + dataReference.crntitle + ") by " + dataReference.crninstructor : ' (' + dataReference.crn + ')') + "</span>.";
 				}
 			}
 
 			// determine if deadline for class extra credit has been applied
-			if(Date.now() >= TIMESTAMP_END) {
+			if(TIMESTAMP_END && Date.now() >= TIMESTAMP_END) {
 				extraCreditText.className += ' no-underline';
 				return showAlert('You can no longer apply for course extra credit. Please contact clarem@cnu.edu for details.');
 			}
+
+			showAlert('All extra credit information has been submitted to professors. Only register or alter CRN data with concent from the department. Please email clarem@cnu.edu for details.');
 
 			// if we made it this far, assume eligible but has not
 			// chosen course yet. Add prompt to choose course
 			// extraCreditInput.style.display = "block";
 			
 			// text event listener
-			if(data.entries[0].survey) {
+			if(dataReference.survey) {
 				
 				$(extraCreditText).on('click', function() {
 					extraCreditInputShowing = true;

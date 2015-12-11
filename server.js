@@ -734,15 +734,28 @@ function initSocketListener() {
 		 		});
 		 	}
 
+		 	var date = new Date();
+
+		 	var semester = 'fall';
+		 	var year = date.getFullYear();
+
+		 	if(date.getMonth() < 6) {
+				semester = 'spring';
+			} else if(date.getMonth() >= 6 && date.getMonth() < 8) {
+				semester = 'summer';
+			} else if(date.getMonth() >= 8 && date.getMonth() <= 12 ) {
+				semester = 'fall';
+			}
+
 		 	// to speed things up, ignore api, use direct mysql query
 		 	// if we made it here, assume student has attended events before
-		 	mysql.query('SELECT t1.event_id, t2.event_name, t2.semester, t2.year, t3.student_id AS id, t3.first, \
-		 		t3.last, t3.major, t3.year AS gradyear, t3.email, t3.date_added AS since, t4.crn, IFNULL(t5.question_id, NULL) \
-		 		AS survey, t6.course AS crncourse, t6.title AS crntitle, t6.instructor AS crninstructor FROM `attendance` AS t1 \
-		 		LEFT JOIN `students` AS t3 ON t1.student_id=t3.student_id LEFT JOIN `events` AS t2 ON t1.event_id=t2.table_name \
-		 		LEFT JOIN `chosencourses` AS t4 ON t1.student_id=t4.student_id LEFT JOIN `surveyresponses` AS t5 ON \
-		 		t1.student_id=t5.student_id LEFT JOIN `coursedata` AS t6 ON t4.crn=t6.crn WHERE t1.student_id="' + clientData.id + '" \
-		 		GROUP BY t1.event_id ORDER BY t2.id ASC', function(err, rows) {
+		 	mysql.query('SELECT t1.table_name AS event_id,t1.event_name,t1.semester,t1.year,t3.student_id AS id,t3.first,\
+		 		t3.last,t3.major,t3.year AS gradyear,t3.email,t3.date_added AS since,t4.crn,IFNULL(t5.question_id, NULL) \
+		 		AS survey,t6.course AS crncourse,t6.title AS crntitle,t6.instructor AS crninstructor FROM `events` AS t1 \
+		 		LEFT JOIN `attendance` AS t2 ON t1.table_name=t2.event_id AND t2.student_id="' + clientData.id + '" LEFT JOIN `students` \
+		 		AS t3 ON t2.student_id=t3.student_id LEFT JOIN `chosencourses` AS t4 ON t2.student_id=t4.student_id LEFT JOIN \
+		 		`surveyresponses` AS t5 ON t2.student_id=t5.student_id LEFT JOIN `coursedata` AS t6 ON t4.crn=t6.crn WHERE \
+		 		t1.semester="' + semester + '" AND t1.year="' + year + '" GROUP BY t1.id', function(err, rows) {
 
 		 		if(err) {
 
