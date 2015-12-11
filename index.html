@@ -163,7 +163,7 @@ function onSocketResponse(eventName, callback) {
 var DEBUG = false;
 var DEBUG_STUDENT_ID = '000000001';
 
-var TIMESTAMP_END = '1449896400346'; // Friday, Midnight 11th, 2015
+var TIMESTAMP_END = '1449723600346'; // Friday, Midnight 11th, 2015
 
 var DEFAULT_MAIN_OUTPUT_PLACEHOLDER = 'Enter your email';
 var PAGE_HOME = 'home';
@@ -1085,8 +1085,6 @@ function handleServerStudentRegisterResponse(data) {
 				extraCreditText.className += ' no-underline';
 				return showAlert('You can no longer apply for course extra credit. Please contact clarem@cnu.edu for details.');
 			}
-
-			showAlert('All extra credit information has been submitted to professors. Only register or alter CRN data with concent from the department. Please email clarem@cnu.edu for details.');
 
 			// if we made it this far, assume eligible but has not
 			// chosen course yet. Add prompt to choose course
