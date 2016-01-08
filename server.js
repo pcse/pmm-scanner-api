@@ -31,6 +31,9 @@ var fs 		= require('fs');
 var socket 	= require('socket.io');
 var http 	= require('http');
 var fcsv 	= require('fast-csv');
+
+var auth 	= require('./private/auth.js');
+
 var mysql   = require('mysql').createConnection({
 	host    : MYSQL_DB_HOST,
 	port    : MYSQL_DB_PORT,
@@ -41,6 +44,7 @@ var mysql   = require('mysql').createConnection({
 
 var Hashids = require('hashids');
 var emailjs = require('emailjs');
+
 var emailServer = emailjs.server.connect({
 	user: 'cnuapps.me@gmail.com',
 	password: 'cnuapps2016',
