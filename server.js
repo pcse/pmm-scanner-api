@@ -987,7 +987,7 @@ function requestUsingAPI(endpoint, callback) {
  		path: endpoint,
  		method: 'GET',
  		headers: {
- 			'Authentication': 'email=juan.vallejo.12@cnu.edu; key=eOKpAJgR3'
+ 			'Authentication': 'email=' + auth.email + '; key=' + auth.key
  		}
 
  	}, function(response) {
