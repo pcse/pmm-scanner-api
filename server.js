@@ -33,6 +33,7 @@ var http 	= require('http');
 var fcsv 	= require('fast-csv');
 
 var auth 	= require('./private/auth.js');
+var date 	= require('./lib/date.js');
 
 var mysql   = require('mysql').createConnection({
 	host    : MYSQL_DB_HOST,
@@ -374,7 +375,7 @@ function parseAPIV1Request(request, response, routedReq) {
 		} else if(keyValuePairs.context == 'events') {
 			mysqlQuery += " GROUP BY t1.event_id ORDER BY t2.id ASC";
 		}
-console.log(mysqlQuery);
+
 	} else {
 		return respondWithError(response, ERR_API_MISSING_CONTEXT);
 	}
@@ -551,7 +552,8 @@ function initSocketListener() {
 				student_major,t4.email AS student_email,t2.question_id,t2.question,t3.choice,t3.choice_id,t1.text_response,t2.type FROM \
 				`surveyresponses` AS t1 LEFT JOIN `surveyquestions` AS t2 ON t1.question_id=t2.question_id \
 				LEFT JOIN `surveyquestionchoices` AS t3 ON t1.choice_id=t3.choice_id LEFT JOIN `students` \
-				AS t4 ON t1.student_id=t4.student_id', function(err, rows) {
+				AS t4 ON t1.student_id=t4.student_id WHERE t1.semester="' + date.getCurrentSemester() + '" \
+				AND t1.year="' + date.getCurrentYear() +'"', function(err, rows) {
 
 				if(err) {
 
@@ -567,7 +569,9 @@ function initSocketListener() {
 				// fetch extra credit and append it to survey data response
 				mysql.query('SELECT t1.crn, t3.course, t3.section, t3.instructor, t1.student_id, t2.last, \
 					t2.first, t2.year, t2.email FROM `chosencourses` AS t1 INNER JOIN `students` AS t2 \
-					ON t1.student_id=t2.student_id LEFT JOIN `coursedata` AS t3 ON t1.crn=t3.crn', function(ecErr, ecRows) {
+					ON t1.student_id=t2.student_id AND t1.semester="' + date.getCurrentSemester() + '" \
+					AND t1.year="' + date.getCurrentYear() + '" LEFT JOIN `coursedata` AS t3 ON \
+					t1.crn=t3.crn', function(ecErr, ecRows) {
 
 					if(ecErr) {
 
@@ -663,8 +667,10 @@ function initSocketListener() {
 		// handle client requesting update of student CRN
 		// expects data to contain a student ID
 		client.on('registerapistudentcrn', function(data) {
-			mysql.query('INSERT INTO `chosencourses` (crn, student_id) VALUES ("' + data.crn + '", "' + data.id + '") ON DUPLICATE KEY UPDATE crn="' + data.crn + '"', function(err) {
-
+			mysql.query('SELECT t1.student_id, t1.semester, t1.year FROM `chosencourses` AS t1 WHERE \
+				t1.student_id="' + data.id + '" AND t1.semester="' + date.getCurrentSemester() + '" \
+				AND t1.year="' + date.getCurrentYear() + '"', function(err, rows) {
+				
 				if(err) {
 					client.emit('registerapistudentcrnresponse', {
 			 			updated: false,
@@ -672,23 +678,43 @@ function initSocketListener() {
 			 			error: true,
 			 			message: err.toString()
 			 		});
-	 				return console.log('SERVER', 'CLIENT', 'MYSQL', 'UPDATE->courseCRN', err);
+	 				return console.log('SERVER', 'CLIENT', 'MYSQL', 'SELECT->courseCRNDuplicateVerify', err);
 				}
 
-				mysql.query('SELECT t1.crn, t1.course AS crncourse, t1.title AS crntitle, t1.instructor AS crninstructor FROM `coursedata` AS t1 WHERE t1.crn="' + data.crn + '"', function(err, rows) {
+				if(rows.length) {
+					mysql.query('UPDATE `chosencourses` SET crn="' + data.crn + '" WHERE student_id="' + data.id + '" \
+						AND semester="' + date.getCurrentSemester() + '" AND year="' + date.getCurrentYear() + '"', onCrnHandle);
+				} else {
+					mysql.query('INSERT INTO `chosencourses` (crn, student_id, semester, year) VALUES ("' + data.crn + '", \
+						"' + data.id + '", "' + date.getCurrentSemester() + '", "' + date.getCurrentYear() + '")', onCrnHandle);
+				}
 
+				function onCrnHandle(err) {
 					if(err) {
-						console.log('SERVER', 'CLIENT', 'MYSQL', 'SELECT->courseCRN', err);
+						client.emit('registerapistudentcrnresponse', {
+				 			updated: false,
+				 			crn: null,
+				 			error: true,
+				 			message: err.toString()
+				 		});
+		 				return console.log('SERVER', 'CLIENT', 'MYSQL', 'UPDATE->courseCRN', err);
 					}
 
-					client.emit('registerapistudentcrnresponse', {
-		 				updated: true,
-		 				crn: data.crn,
-		 				crndata: (rows.length ? rows[0] : null)
+					mysql.query('SELECT t1.crn, t1.course AS crncourse, t1.title AS crntitle, t1.instructor AS crninstructor FROM `coursedata` AS t1 WHERE t1.crn="' + data.crn + '"', function(err, rows) {
 
-		 			});
-				});
+						if(err) {
+							console.log('SERVER', 'CLIENT', 'MYSQL', 'SELECT->courseCRN', err);
+						}
 
+						client.emit('registerapistudentcrnresponse', {
+			 				updated: true,
+			 				crn: data.crn,
+			 				crndata: (rows.length ? rows[0] : null)
+
+			 			});
+					});
+				}
+			
 			});
 		});
 		 
@@ -738,28 +764,19 @@ function initSocketListener() {
 		 		});
 		 	}
 
-		 	var date = new Date();
-
-		 	var semester = 'fall';
-		 	var year = date.getFullYear();
-
-		 	if(date.getMonth() < 6) {
-				semester = 'spring';
-			} else if(date.getMonth() >= 6 && date.getMonth() < 8) {
-				semester = 'summer';
-			} else if(date.getMonth() >= 8 && date.getMonth() <= 12 ) {
-				semester = 'fall';
-			}
-
-		 	// to speed things up, ignore api, use direct mysql query
-		 	// if we made it here, assume student has attended events before
+		 	// to speed things up, ignore api, use direct mysql query.
+		 	// if we made it here, assume student has attended events before.
+		 	// fetch all events for a single semester
 		 	mysql.query('SELECT t1.table_name AS event_id,t1.event_name,t1.semester,t1.year,t3.student_id AS id,t3.first,\
 		 		t3.last,t3.major,t3.year AS gradyear,t3.email,t3.date_added AS since,t4.crn,IFNULL(t5.question_id, NULL) \
 		 		AS survey,t6.course AS crncourse,t6.title AS crntitle,t6.instructor AS crninstructor FROM `events` AS t1 \
-		 		LEFT JOIN `attendance` AS t2 ON t1.table_name=t2.event_id AND t2.student_id="' + clientData.id + '" LEFT JOIN `students` \
-		 		AS t3 ON t2.student_id=t3.student_id LEFT JOIN `chosencourses` AS t4 ON t2.student_id=t4.student_id LEFT JOIN \
-		 		`surveyresponses` AS t5 ON t2.student_id=t5.student_id LEFT JOIN `coursedata` AS t6 ON t4.crn=t6.crn WHERE \
-		 		t1.semester="' + semester + '" AND t1.year="' + year + '" GROUP BY t1.id', function(err, rows) {
+		 		LEFT JOIN `attendance` AS t2 ON t1.table_name=t2.event_id AND t2.student_id="' + clientData.id + '" LEFT \
+		 		JOIN `students` AS t3 ON t2.student_id=t3.student_id LEFT JOIN `chosencourses` AS t4 ON t2.student_id=t4.student_id \
+		 		AND t4.semester="' + date.getCurrentSemester() + '" AND t4.year="' + date.getCurrentYear() + '" LEFT JOIN \
+		 		`surveyresponses` AS t5 ON t2.student_id=t5.student_id AND t5.semester="' + date.getCurrentSemester() + '" \
+		 		AND t5.year="' + date.getCurrentYear() + '" LEFT JOIN `coursedata` AS t6 ON t4.crn=t6.crn WHERE \
+		 		t1.semester="' + date.getCurrentSemester() + '" AND t1.year="' + date.getCurrentYear() + '" \
+		 		GROUP BY t1.id', function(err, rows) {
 
 		 		if(err) {
 
@@ -818,20 +835,39 @@ function initSocketListener() {
 			var SURVEY_QUESTION_MULT_CHOICE = 1;
 			var SURVEY_QUESTION_FREE_RESP 	= 2;
 
-			// attempt to save crn
-			mysql.query('INSERT INTO `chosencourses` (crn, student_id) VALUES ("' + clientData.crn + '", "' + clientData.student_id + '") ON DUPLICATE KEY UPDATE crn="' + clientData.crn + '"', function(err) {
-				if(err) {
-	 				return console.log('SERVER', 'CLIENT', 'MYSQL', 'UPDATE->courseCRN', err);
+			mysql.query('SELECT student_id, semester, year FROM `chosencourses` WHERE \
+				student_id="' + clientData.student_id + '" AND semester="' + date.getCurrentSemester() + '" \
+				AND year="' + date.getCurrentYear() + '"', function(err, rows) {
+
+				if(rows.length) {
+					mysql.query('UPDATE `chosencourses` SET crn="' + clientData.crn + '" WHERE \
+						student_id="' + clientData.student_id + '" AND semester="' + date.getCurrentSemester() + '" \
+						AND year="' + date.getCurrentYear() + '"', onCrnHandle);
+				} else {
+					mysql.query('INSERT INTO `chosencourses` (crn, student_id, semester, year) \
+						VALUES ("' + clientData.crn + '", "' + clientData.student_id + '", \
+							"' + date.getCurrentSemester() + '", "' + date.getCurrentYear() + '")', onCrnHandle);
 				}
+
+				function onCrnHandle(err) {
+					if(err) return console.log('SERVER', 'CLIENT', 'MYSQL', 'UPDATE->courseCRN', err);
+				}
+
 			});
 
 			// save all responses
 			for(var i = 0; i < clientData.entries.length; i++) {
 
 				if(clientData.entries[i].type == SURVEY_QUESTION_MULT_CHOICE) {
-					mysql.query('INSERT INTO `surveyresponses` (student_id, question_id, choice_id) VALUES("' + clientData.student_id + '", "' + clientData.entries[i].question_id + '", "' + clientData.entries[i].choice_id + '")', mysqlQueryCallback);
+					mysql.query('INSERT INTO `surveyresponses` (student_id, question_id, choice_id, semester, year) \
+						VALUES("' + clientData.student_id + '", "' + clientData.entries[i].question_id + '", \
+							"' + clientData.entries[i].choice_id + '", "' + date.getCurrentSemester() + '", \
+							"' + date.getCurrentYear() + '")', mysqlQueryCallback);
 				} else {
-					mysql.query('INSERT INTO `surveyresponses` (student_id, question_id, text_response) VALUES("' + clientData.student_id + '", "' + clientData.entries[i].question_id + '", "' + clientData.entries[i].response_text + '")', mysqlQueryCallback);
+					mysql.query('INSERT INTO `surveyresponses` (student_id, question_id, text_response, semester, year) \
+						VALUES("' + clientData.student_id + '", "' + clientData.entries[i].question_id + '", \
+							"' + clientData.entries[i].response_text + '", "' + date.getCurrentSemester() + '", \
+							"' + date.getCurrentYear() + '")', mysqlQueryCallback);
 				}
 
 			}
