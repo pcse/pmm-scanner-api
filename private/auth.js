@@ -5,8 +5,8 @@
 
 var auth = {
 
-	email: 'juan.vallejo.12@cnu.edu',
-	key: 'w4Y3b5WOX'
+	email: 'sample.email@email.com',
+	key: 'SAMPLE'
 
 };
 
