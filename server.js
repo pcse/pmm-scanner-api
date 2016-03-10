@@ -1073,16 +1073,18 @@ function syncDatabases(clientEntries, client) {
 
 	// sync event names
 	if(clientEntries.eventname) {
-		if(!eventName || clientEntries.eventname != eventName) {
+		if(eventName == null || clientEntries.eventname != eventName) {
 			eventName = clientEntries.eventname;
 			console.log('SERVER', 'SYNC', 'eventName', 'Found updated event name, altering...');
-			mysql.query("UPDATE `events` set event_name = '" + eventName + "' WHERE table_name = '" + GLOBAL_DATE + "'", function() {
+			mysql.query("UPDATE `events` SET event_name='" + eventName + "' WHERE table_name='" + GLOBAL_DATE + "'", function(err) {
 				if(err) {
 					return console.log('SERVER', 'SYNC', 'eventName', 'ERR', err);
 				}
 					console.log('SERVER', 'SYNC', 'eventName', 'Successfully updated eventName to', eventName);
 			});
 		}
+	} else {
+		console.log('FAIL', 'no eventname detected');
 	}
 
 	if(clientEntries.students) {
