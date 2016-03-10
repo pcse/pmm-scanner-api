@@ -1076,8 +1076,7 @@ function syncDatabases(clientEntries, client) {
 		if(!eventName || clientEntries.eventname != eventName) {
 			eventName = clientEntries.eventname;
 			console.log('SERVER', 'SYNC', 'eventName', 'Found updated event name, altering...');
-			mysql.query("UPDATE `events` set table_name = '" + eventName + "' \
-			WHERE table_name = '" + GLOBAL_DATE + "'", function() {
+			mysql.query("UPDATE `events` set event_name = '" + eventName + "' WHERE table_name = '" + GLOBAL_DATE + "'", function() {
 				if(err) {
 					return console.log('SERVER', 'SYNC', 'eventName', 'ERR', err);
 				}
