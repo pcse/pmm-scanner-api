@@ -1083,8 +1083,6 @@ function syncDatabases(clientEntries, client) {
 					console.log('SERVER', 'SYNC', 'eventName', 'Successfully updated eventName to', eventName);
 			});
 		}
-	} else {
-		console.log('FAIL', 'no eventname detected');
 	}
 
 	if(clientEntries.students) {
