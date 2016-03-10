@@ -1071,6 +1071,21 @@ function syncDatabases(clientEntries, client) {
 	var entriesSynced = 0;
 	var errors = [];
 
+	// sync event names
+	if(clientEntries.eventname) {
+		if(!eventName || clientEntries.eventname != eventName) {
+			eventName = clientEntries.eventname;
+			console.log('SERVER', 'SYNC', 'eventName', 'Found updated event name, altering...');
+			mysql.query("UPDATE `events` set table_name = '" + eventName + "' \
+			WHERE table_name = '" + GLOBAL_DATE + "'", function() {
+				if(err) {
+					return console.log('SERVER', 'SYNC', 'eventName', 'ERR', err);
+				}
+					console.log('SERVER', 'SYNC', 'eventName', 'Successfully updated eventName to', eventName);
+			});
+		}
+	}
+
 	if(clientEntries.students) {
 
 		console.log('SERVER', 'SYNC', 'Comparing remote `students`', databaseEntries.students.length , ':', clientEntries.students.length);
