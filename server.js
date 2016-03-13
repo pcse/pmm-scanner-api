@@ -481,7 +481,7 @@ function initSocketListener() {
 			// tell console we're creating a table for our event instead of updating the mysql database. hopefully just this once.
 			console.log('MYSQL', 'SYNC', client.id, 'Adding new event data from client to `events` table');
 
-			mysql.query('INSERT IGNORE INTO `events` (table_name, event_name, semester, year) VALUES ("' + data.eventId + '", "' + data.eventId + '", "' + data.semester + '", "' + data.year + '")', function(err) {
+			mysql.query('INSERT IGNORE INTO `events` (table_name, event_name, semester, year) VALUES ("' + data.eventId + '", "' + data.eventName + '", "' + data.semester + '", "' + data.year + '")', function(err) {
 
 				if(err) {
 					// if an error occurrs creating table for current event, 
