@@ -1220,6 +1220,11 @@ function syncDatabases(clientEntries, client) {
 		}
 	}
 
+	// if present, update global date
+	if(clientEntries.global_date) {
+		GLOBAL_DATE = clientEntries.global_date;
+	}
+
 	// if present, compare with hash of attendance table and determine if there are any differences
 	// this differs from attendance above, as this is the FULL attendance table, not just the entries
 	// for the current event
