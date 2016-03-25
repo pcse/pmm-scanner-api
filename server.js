@@ -1222,6 +1222,7 @@ function syncDatabases(clientEntries, client) {
 
 	// if present, update global date
 	if(clientEntries.global_date) {
+		console.log('SERVER', 'SYNC', 'DATE', 'Syncing global date to ' + clientEntries.global_date);
 		GLOBAL_DATE = clientEntries.global_date;
 	}
 
