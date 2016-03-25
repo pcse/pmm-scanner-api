@@ -971,7 +971,7 @@ function handleServerStudentRegisterResponse(data) {
 			});
 
 			if(!data.entries[i].id) {
-				color = 'rgba(255,255,255,0.25)';
+				color = 'rgba(255,255,255,0.25); text-decoration:line-through';
 			}
 			
 			tr.innerHTML = '<td style="color:' + color + ';">' + tableIdToDate(data.entries[i].event_id) + '</td>';
