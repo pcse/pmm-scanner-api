@@ -6,9 +6,24 @@
  * @juanvallejo
  */
 
+var os = require('os');
+
+// detect if in production at CNU server
+if(os.hostname() == 'fenrir') {
+	process.env.OPENSHIFT_MYSQL_DB_USER = 'root';
+	process.env.OPENSHIFT_MYSQL_DB_PASS = 'pcse';
+	process.env.OPENSHIFT_MYSQL_DB_PORT = '3306';
+} else {
+	process.env.OPENSHIFT_MYSQL_DB_USER = 'adminVhA9aks';
+	process.env.OPENSHIFT_MYSQL_DB_PASS = 'WwnDBa9n2sNz';
+}
+
 // define runtime variables
 var MYSQL_DB_HOST 	= process.env.OPENSHIFT_MYSQL_DB_HOST 	|| '127.0.0.1';
 var MYSQL_DB_PORT 	= process.env.OPENSHIFT_MYSQL_DB_PORT 	|| '63966';
+var MYSQL_DB_USER 	= process.env.OPENSHIFT_MYSQL_DB_USER 	|| 'root';
+var MYSQL_DB_USER 	= process.env.OPENSHIFT_MYSQL_DB_PASS 	|| '';
+
 var APP_MAIN_HOST 	= process.env.OPENSHIFT_NODEJS_IP 		|| '0.0.0.0';
 var APP_MAIN_PORT 	= process.env.OPENSHIFT_NODEJS_PORT 	|| 7777;
 
@@ -38,8 +53,8 @@ var date 	= require('./lib/date.js');
 var mysql   = require('mysql').createConnection({
 	host    : MYSQL_DB_HOST,
 	port    : MYSQL_DB_PORT,
-	user    : 'adminVhA9aks',
-	password: 'WwnDBa9n2sNz',
+	user    : MYSQL_DB_USER,
+	password: MYSQL_DB_PASS,
 	database: 'pmm'
 });
 
