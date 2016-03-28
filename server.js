@@ -480,7 +480,7 @@ function initFetchDatabaseEntries() {
  */
 function initSocketListener() {
 
-	console.log('SERVER', 'Database configured, ' + databaseEntries.students.length + ' rows found. Listening for connections...');
+	console.log('SERVER', 'Database configured, ' + databaseEntries.students.length + ' rows found. Listening for connections on port ' + APP_MAIN_PORT + '...');
 
 	var io = socket.listen(httpServer).on('connection', function(client) {
 
@@ -1040,7 +1040,8 @@ function requestUsingAPI(endpoint, callback) {
 	var ERROR_OCCURRED = false;
 
 	var request = http.request({
- 		host: 'pmm-rubyserverapps.rhcloud.com',
+ 		host: 'fenrir.pcs.cnu.edu',
+ 		port: 7777,
  		path: endpoint,
  		method: 'GET',
  		headers: {
