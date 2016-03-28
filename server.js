@@ -22,7 +22,7 @@ if(os.hostname() == 'fenrir') {
 var MYSQL_DB_HOST 	= process.env.OPENSHIFT_MYSQL_DB_HOST 	|| '127.0.0.1';
 var MYSQL_DB_PORT 	= process.env.OPENSHIFT_MYSQL_DB_PORT 	|| '63966';
 var MYSQL_DB_USER 	= process.env.OPENSHIFT_MYSQL_DB_USER 	|| 'root';
-var MYSQL_DB_USER 	= process.env.OPENSHIFT_MYSQL_DB_PASS 	|| '';
+var MYSQL_DB_PASS 	= process.env.OPENSHIFT_MYSQL_DB_PASS 	|| '';
 
 var APP_MAIN_HOST 	= process.env.OPENSHIFT_NODEJS_IP 		|| '0.0.0.0';
 var APP_MAIN_PORT 	= process.env.OPENSHIFT_NODEJS_PORT 	|| 7777;
