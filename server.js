@@ -2,7 +2,7 @@
 
 /**
  * Pizza My Mind API server - Handles API endpoint requests
- * Serves online web app requests for viewing event data
+ * Serves online web app requests for viewing event data.
  * @juanvallejo
  */
 
