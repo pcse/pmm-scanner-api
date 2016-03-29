@@ -482,7 +482,7 @@ function initFetchDatabaseEntries() {
  */
 function initSocketListener() {
 
-	console.log('SERVER', 'Database configured, ' + databaseEntries.students.length + ' rows found. Listening for connections on port ' + APP_MAIN_PORT + '...');
+	console.log('SERVER', 'Database ready, ' + databaseEntries.students.length + ' rows found. Listening for connections on port ' + APP_MAIN_PORT + '...');
 
 	var io = socket.listen(httpServer).on('connection', function(client) {
 
