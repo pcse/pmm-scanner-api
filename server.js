@@ -14,7 +14,7 @@ if(os.hostname() == 'fenrir') {
 	process.env.OPENSHIFT_MYSQL_DB_PASS = 'pcse';
 	process.env.OPENSHIFT_MYSQL_DB_PORT = '3306';
 
-	process.env.OPENSHIFT_NODEJS_PORT 	= 80;
+	process.env.OPENSHIFT_NODEJS_PORT 	= 7777;
 } else {
 	process.env.OPENSHIFT_MYSQL_DB_USER = 'adminVhA9aks';
 	process.env.OPENSHIFT_MYSQL_DB_PASS = 'WwnDBa9n2sNz';
