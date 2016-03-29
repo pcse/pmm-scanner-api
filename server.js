@@ -1,4 +1,4 @@
-#!/bin/env/node
+#!/usr/bin/env nodejs
 
 /**
  * Pizza My Mind API server - Handles endpoint requests
