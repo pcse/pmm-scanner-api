@@ -2,7 +2,7 @@
 
 /**
  * Pizza My Mind API server - Handles endpoint requests
- * and online status app
+ * and online web app
  * @juanvallejo
  */
 
