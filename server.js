@@ -1043,6 +1043,7 @@ function requestUsingAPI(endpoint, callback) {
 
 	var request = http.request({
  		host: 'fenrir.pcs.cnu.edu',
+ 		port: '7777',
  		path: endpoint,
  		method: 'GET',
  		headers: {
