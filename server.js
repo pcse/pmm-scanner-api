@@ -1,7 +1,7 @@
 #!/usr/bin/env nodejs
 
 /**
- * Pizza My Mind API server - Handles endpoint requests
+ * Pizza My Mind API server - Handles API endpoint requests
  * and online web app
  * @juanvallejo
  */
