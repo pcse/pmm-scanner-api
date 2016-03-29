@@ -1,8 +1,8 @@
 #!/bin/env/node
 
 /**
- * Pizza My Mind API server - Handles endpoint requests,
- * request authentication, and dataflow
+ * Pizza My Mind API server - Handles endpoint requests
+ * and online status app
  * @juanvallejo
  */
 
