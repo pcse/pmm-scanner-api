@@ -588,7 +588,8 @@ function initSocketListener() {
 					t2.first, t2.year, t2.email FROM `chosencourses` AS t1 INNER JOIN `students` AS t2 \
 					ON t1.student_id=t2.student_id AND t1.semester="' + date.getCurrentSemester() + '" \
 					AND t1.year="' + date.getCurrentYear() + '" LEFT JOIN `coursedata` AS t3 ON \
-					t1.crn=t3.crn', function(ecErr, ecRows) {
+					t1.crn=t3.crn AND t3.semester="' + date.getCurrentSemester() + '" AND \
+					t3.year="' + date.getCurrentYear() +'"', function(ecErr, ecRows) {
 
 					if(ecErr) {
 
@@ -719,7 +720,9 @@ function initSocketListener() {
 		 				return console.log('SERVER', 'CLIENT', 'MYSQL', 'UPDATE->courseCRN', err);
 					}
 
-					mysql.query('SELECT t1.crn, t1.course AS crncourse, t1.title AS crntitle, t1.instructor AS crninstructor FROM `coursedata` AS t1 WHERE t1.crn="' + data.crn + '"', function(err, rows) {
+					mysql.query('SELECT t1.crn, t1.course AS crncourse, t1.title AS crntitle, t1.instructor \
+						AS crninstructor FROM `coursedata` AS t1 WHERE t1.crn="' + data.crn + '" AND \
+						t1.semester="' + date.getCurrentSemester() +'" AND t1.year="' + date.getCurrentYear() + '"', function(err, rows) {
 
 						if(err) {
 							console.log('SERVER', 'CLIENT', 'MYSQL', 'SELECT->courseCRN', err);
@@ -793,7 +796,8 @@ function initSocketListener() {
 		 		JOIN `students` AS t3 ON t2.student_id=t3.student_id LEFT JOIN `chosencourses` AS t4 ON t2.student_id=t4.student_id \
 		 		AND t4.semester="' + date.getCurrentSemester() + '" AND t4.year="' + date.getCurrentYear() + '" LEFT JOIN \
 		 		`surveyresponses` AS t5 ON t2.student_id=t5.student_id AND t5.semester="' + date.getCurrentSemester() + '" \
-		 		AND t5.year="' + date.getCurrentYear() + '" LEFT JOIN `coursedata` AS t6 ON t4.crn=t6.crn WHERE \
+		 		AND t5.year="' + date.getCurrentYear() + '" LEFT JOIN `coursedata` AS t6 ON t4.crn=t6.crn AND \
+		 		t6.semester="' + date.getCurrentSemester() + '" AND t6.year="' + date.getCurrentYear() + '" WHERE \
 		 		t1.semester="' + date.getCurrentSemester() + '" AND t1.year="' + date.getCurrentYear() + '" \
 		 		GROUP BY t1.id', function(err, rows) {
 
