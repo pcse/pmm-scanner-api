@@ -534,9 +534,9 @@ function initSocketListener() {
 		// handle command to remove student from attendance for current event
 		client.on('cmd_del_student', function(data) {
 
-			for(var i = 0; i < databaseEntries.students.length; i++) {
-				if(data.studentId == databaseEntries.students[i].student_id) {
-					databaseEntries.students.splice(i, 1);
+			for(var i = 0; i < databaseEntries.attendance.length; i++) {
+				if(data.studentId == databaseEntries.attendance[i].student_id) {
+					databaseEntries.attendance.splice(i, 1);
 				}
 			}
 			
