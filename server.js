@@ -531,10 +531,18 @@ function initSocketListener() {
 			syncDatabases(data, client);
 		});
 
+		// handle command to remove student from attendance for current event
+		client.on('cmd_del_student', function(data) {
+			mysql.query('DELETE FROM `attendance` WHERE student_id="' + data.studentId + '" and event_id="' + GLOBAL_DATE + '"', function(err) {
+				if(err) {
+	 				return console.log('SERVER', 'CLIENT', 'MYSQL', err);
+				}
+			});
+		});
+
 		/**
 		 * Handle GUI events
 		 */
-
 
 		// admin has requested a spreadhseet version of the
 		// data provided as an array
