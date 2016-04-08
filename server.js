@@ -439,6 +439,8 @@ function respondWithError(response, error, errorCode) {
  */
 function initFetchDatabaseEntries() {
 
+	databaseEntries.deleted = {};
+
 	console.log('MYSQL', 'INFO', 'Fetching stored data from database...');
 
 	mysql.query('SELECT * FROM `students`', function(err, rows, fields) {
@@ -536,6 +538,7 @@ function initSocketListener() {
 
 			for(var i = 0; i < databaseEntries.attendance.length; i++) {
 				if(data.studentId == databaseEntries.attendance[i].student_id) {
+					// databaseEntries.deleted[data.studentId] = true;
 					databaseEntries.attendance.splice(i, 1);
 				}
 			}
@@ -1196,7 +1199,7 @@ function syncDatabases(clientEntries, client) {
 			}
 
 			// save entry in diff, databaseEntries.attendance
-			if(!entryExists) {
+			if(!entryExists && !databaseEntries.deleted[clientEntries.attendance[i].student_id]) {
 				diff.push(clientEntries.attendance[i]);
 				databaseEntries.attendance.push(clientEntries.attendance[i]);
 			}
