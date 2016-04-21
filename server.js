@@ -227,7 +227,7 @@ function authenticateAPIRequest(request, response, routedReq, callback) {
 
 	}
 
-	mysql.query('SELECT propValue, isActive, hashKey FROM `metadata` WHERE property="api_user"', function(err, rows) {
+	mysql.query('SELECT propValue, isActive, hashKey FROM `metadata` WHERE property="api_user" AND propValue="' + headerTokens.email + '" AND hashKey="' + headerTokens.key + '" AND isActive="1"', function(err, rows) {
 
 		if(err) {
 			return console.log('SERVER', 'API', 'MYSQL', 'AUTH', err);
