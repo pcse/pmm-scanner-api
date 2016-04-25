@@ -21,6 +21,9 @@
 var serverURL = 'http://fenrir.pcs.cnu.edu:7777';
 var socket = null;
 
+// timeout for displaying notice after no response from server
+var pageLoadingErrorTimeout = null;
+
 var response_callbacks = {};
 
 if(window.location.hostname == 'localhost') {
@@ -37,67 +40,83 @@ if(socket) {
 
 	// admin has requested api access
 	socket.on('registerapiemailresponse', function(data) {
+		emitSuccessfulServerResponse(data);
 		handleServerEmailRegisterResponse(data);
 	});
 
 	// student has requested to log in
 	socket.on('registerapistudentidresponse', function(data) {
+		emitSuccessfulServerResponse(data);
 		handleServerStudentRegisterResponse(data);
 	});
 
 	// student has logged in, has requested survey questions
 	socket.on('registerapistudentidsurveyresponse', function(data) {
+		emitSuccessfulServerResponse(data);
 		handleServerStudentRegisterSurveyResponse(data);
 	});
 
 	// admin has requested to log in
 	socket.on('registerapiauthadminresponse', function(data) {
+		emitSuccessfulServerResponse(data);
 		handleServerAdminRegisterResponse(data);
 	});
 
 	// client has asked for database timestamp
 	socket.on('registerapistudentidlastupdatedresponse', function(data) {
+		emitSuccessfulServerResponse(data);
 		handleStudentRegisterLastUpdatedResponse(data);
 	});
 
 	// student has requested last saved crn response
 	socket.on('registerapistudentcrnresponse', function(data) {
-		for(var i = 0; i < response_callbacks['registerapistudentcrnresponse'].length; i++) {
-			response_callbacks['registerapistudentcrnresponse'][i].call(this, data);
-		}
+		emitSuccessfulServerResponse(data);
+		callEventCallbacks('registerapistudentcrnresponse', data);
 	});
 
 	// client has requested spreadsheet generation from data
 	socket.on('registerapiadmindownloadspreadsheetresponse', function(data) {
-		for(var i = 0; i < response_callbacks['registerapiadmindownloadspreadsheetresponse'].length; i++) {
-			response_callbacks['registerapiadmindownloadspreadsheetresponse'][i].call(this, data);
-		}
+		emitSuccessfulServerResponse(data);
+		callEventCallbacks('registerapiadmindownloadspreadsheetresponse', data);
 	});
 
 	// client has requested submission of survey questions
 	socket.on('registerapistudentsurveysubmitresponse', function(data) {
-		for(var i = 0; i < response_callbacks['registerapistudentsurveysubmitresponse'].length; i++) {
-			response_callbacks['registerapistudentsurveysubmitresponse'][i].call(this, data);
-		}
+		emitSuccessfulServerResponse(data);
+		callEventCallbacks('registerapistudentsurveysubmitresponse', data);
 	});
 	
 	// client has requested survey response data
 	socket.on('registerapiadminsurveydataresponse', function(data) {
-		for(var i = 0; i < response_callbacks['registerapiadminsurveydataresponse'].length; i++) {
-			response_callbacks['registerapiadminsurveydataresponse'][i].call(this, data);
-		}
+		emitSuccessfulServerResponse(data);
+		callEventCallbacks('registerapiadminsurveydataresponse', data);
 	});
 
+}
+
+function emitSuccessfulServerResponse(data) {
+	clearTimeout(pageLoadingErrorTimeout);
+}
+
+function callEventCallbacks(eventName, data) {
+	for(var i = 0; i < response_callbacks[eventName].length; i++) {
+		response_callbacks[eventName][i].call(this, data);
+		if(response_callbacks[eventName][i].is_unique) {
+			response_callbacks[eventName].splice(i, 1);
+		}
+	}
 }
 
 /**
  * Handle callback functions for specific server responses
  */
-function onSocketResponse(eventName, callback) {
+function onSocketResponse(eventName, callback, unique) {
 
 	if(!(typeof callback == 'function')) {
 		return;
 	}
+
+	callback.is_unique = unique || false;
 
 	if(!response_callbacks[eventName]) {
 		response_callbacks[eventName] = [];
@@ -163,7 +182,8 @@ function onSocketResponse(eventName, callback) {
 var DEBUG = false;
 var DEBUG_STUDENT_ID = '000000001';
 
-var TIMESTAMP_END = null; // Friday, Midnight 11th, 2015
+var TIMESTAMP_END = null; // sets deadline for registering class extra credit.
+						  // set to NULL to have no deadline
 
 var DEFAULT_MAIN_OUTPUT_PLACEHOLDER = 'Enter your email';
 var PAGE_HOME = 'home';
@@ -417,6 +437,20 @@ function showAlert(text) {
 
 }
 
+/**
+ * Sets "loading, please wait..." text and a timeout event
+ * to display a loading error after 8 seconds of no reply from
+ * the server due to socket connection issues
+ */
+function setPageLoadingTimeout(div) {
+	div.innerHTML = 'Loading, please wait...';
+	clearTimeout(pageLoadingErrorTimeout);
+	pageLoadingErrorTimeout = setTimeout(function() {
+		div.innerHTML = 'Hm, something is not right. If you are experiencing trouble loading this content, \
+		refresh this page and try again.<br /><br />Please note that you MUST use WiFi-CNU to access this content.';
+	}, 8000);
+}
+
 // display all student event and course selection data
 // for selected admin with email, key combination
 function showAdminResultsPage(email, key) {
@@ -424,7 +458,8 @@ function showAdminResultsPage(email, key) {
 	mainInput.placeholder = DEFAULT_MAIN_OUTPUT_PLACEHOLDER;
 	homePage.style.display = 'none';
 	resultsPage.style.display = 'block';
-	resultsContent.innerHTML = 'Loading, please wait...';
+
+	setPageLoadingTimeout(resultsContent);
 
 	if(socket) {
 		socket.emit('registerapiauthadmin', {
@@ -441,7 +476,8 @@ function showRegisterResultsPage(email) {
 	mainInput.placeholder = DEFAULT_MAIN_OUTPUT_PLACEHOLDER;
 	homePage.style.display = 'none';
 	resultsPage.style.display = 'block';
-	resultsContent.innerHTML = 'Loading, please wait...';
+
+	setPageLoadingTimeout(resultsContent);
 
 	if(socket) {
 		socket.emit('registerapiemail', {
@@ -460,7 +496,8 @@ function showHomeResultsPage(studentId) {
 	mainInput.placeholder = DEFAULT_MAIN_OUTPUT_PLACEHOLDER;
 	homePage.style.display = 'none';
 	resultsPage.style.display = 'block';
-	resultsContent.innerHTML = 'Loading, please wait...';
+
+	setPageLoadingTimeout(resultsContent);
 
 	if(socket) {
 		socket.emit('registerapistudentid', {
@@ -477,7 +514,8 @@ function showHomeSurveyPage(studentId) {
 	mainInput.placeholder = DEFAULT_MAIN_OUTPUT_PLACEHOLDER;
 	homePage.style.display = 'none';
 	resultsPage.style.display = 'block';
-	resultsContent.innerHTML = 'Loading, please wait...';
+
+	setPageLoadingTimeout(resultsContent);
 
 	if(socket) {
 		socket.emit('registerapistudentidsurvey', {
@@ -865,7 +903,7 @@ function handleServerAdminRegisterResponse(data) {
 
 		});
 
-	});
+	}, true);
 
 }
 
@@ -1323,7 +1361,8 @@ function handleServerStudentRegisterSurveyResponse(data) {
 		}
 
 		showHomeResultsPage(data.student_id);
-		showAlert('Thank you for your feedback! Your answers have been recorded.'); ////--
+		showAlert('Thank you for your feedback! Your answers have been recorded.');
+
 	});
 }
 

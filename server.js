@@ -16,13 +16,13 @@ if(os.hostname() == 'fenrir') {
 
 	process.env.OPENSHIFT_NODEJS_PORT 	= 7777;
 } else {
-	process.env.OPENSHIFT_MYSQL_DB_USER = 'adminVhA9aks';
-	process.env.OPENSHIFT_MYSQL_DB_PASS = 'WwnDBa9n2sNz';
+	process.env.OPENSHIFT_MYSQL_DB_USER = 'root'; // adminVhA9aks
+	process.env.OPENSHIFT_MYSQL_DB_PASS = 'pcse'; // WwnDBa9n2sNz
 }
 
 // define runtime variables
 var MYSQL_DB_HOST 	= process.env.OPENSHIFT_MYSQL_DB_HOST 	|| '127.0.0.1';
-var MYSQL_DB_PORT 	= process.env.OPENSHIFT_MYSQL_DB_PORT 	|| '63966';
+var MYSQL_DB_PORT 	= process.env.OPENSHIFT_MYSQL_DB_PORT 	|| '3307';
 var MYSQL_DB_USER 	= process.env.OPENSHIFT_MYSQL_DB_USER 	|| 'root';
 var MYSQL_DB_PASS 	= process.env.OPENSHIFT_MYSQL_DB_PASS 	|| '';
 
