@@ -559,13 +559,19 @@ function handleServerAdminRegisterResponse(data) {
 				email: data.entries[i].email,
 				gradyear: data.entries[i].gradyear,
 				crn: data.entries[i].crn,
-				events:[]
+				events:[],
+				event_ids: {}
 			};
 
 			studentCount++;
 		}
 
-		// add new event
+		// add new event if not added yet
+		if(students[data.entries[i].id].event_ids[data.entries[i].event_id]) {
+			continue;
+		}
+
+		students[data.entries[i].id].event_ids[data.entries[i].event_id] = true;
 		students[data.entries[i].id].events.push({
 			event_id: data.entries[i].event_id,
 			event_name: data.entries[i].event_name,
