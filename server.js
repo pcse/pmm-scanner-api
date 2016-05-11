@@ -581,6 +581,40 @@ function initSocketListener() {
 
 		});
 
+		// admin has requested data for a specific student
+		client.on('registerapiadminstudentdata', function(data) {
+
+			mysql.query('SELECT t1.table_name AS event_id,t1.event_name,t1.semester,t1.year,t3.student_id AS id,t3.first,\
+		 		t3.last,t3.major,t3.year AS gradyear,t3.email,t3.date_added AS since,t4.crn,IFNULL(t5.question_id, NULL) \
+		 		AS survey,t6.course AS crncourse,t6.title AS crntitle,t6.instructor AS crninstructor FROM `events` AS t1 \
+		 		LEFT JOIN `attendance` AS t2 ON t1.table_name=t2.event_id AND t2.student_id="' + data.id + '" LEFT \
+		 		JOIN `students` AS t3 ON t2.student_id=t3.student_id LEFT JOIN `chosencourses` AS t4 ON t2.student_id=t4.student_id \
+		 		AND t4.semester="' + date.getCurrentSemester() + '" AND t4.year="' + date.getCurrentYear() + '" LEFT JOIN \
+		 		`surveyresponses` AS t5 ON t2.student_id=t5.student_id AND t5.semester="' + date.getCurrentSemester() + '" \
+		 		AND t5.year="' + date.getCurrentYear() + '" LEFT JOIN `coursedata` AS t6 ON t4.crn=t6.crn AND \
+		 		t6.semester="' + date.getCurrentSemester() + '" AND t6.year="' + date.getCurrentYear() + '" WHERE \
+		 		t1.semester="' + date.getCurrentSemester() + '" AND t1.year="' + date.getCurrentYear() + '" \
+		 		GROUP BY t1.id', function(err, rows) {
+
+		 			if(err) {
+
+						client.emit('registerapiadminstudentdataresponse', {
+		 					entries: [],
+		 					error: true,
+		 					message: err.toString()
+		 				});
+
+ 						return console.log('SERVER', 'CLIENT', 'MYSQL', err);
+					}
+
+					client.emit('registerapiadminstudentdataresponse', {
+						student_id: data.id,
+		 				entries: rows
+		 			});
+
+		 		});
+		});
+
 		// admin has requested survey and extra credit data
 		client.on('registerapiadminsurveydata', function() {
 
@@ -661,6 +695,7 @@ function initSocketListener() {
 		 		}
 
 		 		if(!rows.length) {
+		 			console.log('ADMIN LOGIN', 'WARNING', clientData.email, 'has failed to log in with keycode', clientData.hash);
 		 			return client.emit('registerapiauthadminresponse', {
 			 			entries: [],
 			 			authenticated: false,
@@ -668,6 +703,8 @@ function initSocketListener() {
 			 			message: ERR_API_UNAUTHORIZED
 			 		});
 		 		}
+
+		 		console.log('ADMIN LOGIN', 'WARNING', clientData.email, 'has successfully logged in with keycode', clientData.hash);
 
 		 		// use api to select general context of students to events
 		 		// also merge in courses selected

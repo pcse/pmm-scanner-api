@@ -92,6 +92,12 @@ if(socket) {
 		callEventCallbacks('registerapiadminsurveydataresponse', data);
 	});
 
+	// client has requested survey response data
+	socket.on('registerapiadminstudentdataresponse', function(data) {
+		emitSuccessfulServerResponse(data);
+		callEventCallbacks('registerapiadminstudentdataresponse', data);
+	});
+
 }
 
 function emitSuccessfulServerResponse(data) {
@@ -182,13 +188,14 @@ function onSocketResponse(eventName, callback, unique) {
 var DEBUG = false;
 var DEBUG_STUDENT_ID = '000000001';
 
-var TIMESTAMP_END = 1462031940000; // sets deadline for registering class extra credit.
+var TIMESTAMP_END = null; // sets deadline for registering class extra credit.
 						  // set to NULL to have no deadline
 
 var DEFAULT_MAIN_OUTPUT_PLACEHOLDER = 'Enter your email';
 var PAGE_HOME = 'home';
 var PAGE_REGISTER = 'register';
 var PAGE_ADMIN = 'admin';
+var PAGE_ADMIN_AUTH = 'admin_auth';
 
 // question type definitions
 var SURVEY_QUESTION_MULT_CHOICE = 1;
@@ -264,9 +271,20 @@ if(!isMainPage && params[1] == 'email' && params[2]) {
 
 // if debug use default student ID
 if(DEBUG) {
+	alert('DEBUG MODE is on');
 	console.log('WARN', 'DEBUG mode is on.', 'Please be cautious to set DEBUG mode off before pushing.');
 	// showHomeResultsPage(DEBUG_STUDENT_ID);
-	// showAdminResultsPage('nicetry@cnu.edu', 'thatllbefine');
+	// showAdminResultsPage('ADMIN_EMAIL', 'ADMIN_PASSWORD');
+
+	setTimeout(function() {
+		function run() { var e = jQuery.Event("keydown", {keyCode: 13}); $('#admin-button-edit-student').click(); $('#admin-button-input-edit-student').val('00000000'); $('#admin-button-input-edit-student').focus(); }
+			run();
+	}, 400);
+}
+
+// replace table id underscores with slashes
+function tableIdToDate(id) {
+	return id.replace(/\_/gi, '\/');
 }
 
 // define general user action-driven callback functions
@@ -304,7 +322,9 @@ function handleURL(urlPieces) {
 
 function handleViewByPageName(isPage) {
 
-	if(isPage == PAGE_ADMIN) {
+	if(isPage == PAGE_ADMIN_AUTH) {
+		handleLoggedInAdminView();
+	} else if(isPage == PAGE_ADMIN) {
 		handleAdminView();
 	} else if(isPage == PAGE_REGISTER) {
 		handleRegistrationView();
@@ -344,6 +364,18 @@ function handleRegistrationView() {
 	mainOutput.innerHTML = 'Press ENTER To continue signing up';
 }
 
+function handleLoggedInAdminView() {
+
+	isPage = PAGE_ADMIN;
+	
+	if(!mainInput.valueAdminHashKey || !mainInput.valueAdminEmail) {
+		return handleAdminView();
+	}
+
+	showAdminResultsPage(mainInput.valueAdminEmail, mainInput.valueAdminHashKey);
+
+}
+
 function handleAdminView() {
 
 	isPage = PAGE_ADMIN;
@@ -379,8 +411,8 @@ function handleAdminAuthentication() {
 			showAdminResultsPage(mainInput.valueAdminEmail, mainInput.valueAdminHashKey);
 
 			// reset admin input
-			mainInput.valueAdminEmail 	= null;
-			mainInput.valueAdminHashKey = null;
+			// mainInput.valueAdminEmail 	= null;
+			// mainInput.valueAdminHashKey = null;
 			mainInput.type 				= 'text';
 
 			return;
@@ -412,7 +444,7 @@ function handleAdminAuthentication() {
 }
 
 // display alert message
-function showAlert(text) {
+function showAlert(text, duration) {
 
 	if(!showAlert.container) {
 
@@ -433,7 +465,7 @@ function showAlert(text) {
 	clearTimeout(showAlert.container.timeout);
 	showAlert.container.timeout = setTimeout(function() {
 		$(showAlert.container).fadeOut();
-	}, 100000);
+	}, duration || 100000);
 
 }
 
@@ -459,6 +491,7 @@ function showAdminResultsPage(email, key) {
 	homePage.style.display = 'none';
 	resultsPage.style.display = 'block';
 
+	// set loading sign, handle no response from server
 	setPageLoadingTimeout(resultsContent);
 
 	if(socket) {
@@ -526,6 +559,160 @@ function showHomeSurveyPage(studentId) {
 
 }
 
+// received when data for a student id is requested by an admin
+function handleServerAdminStudentDataResponse(data) {
+
+	isPage = PAGE_ADMIN_AUTH;
+
+	if(data.error) {
+		return showAlert('An error occurred while contacting the authentication server. Please try again later. (' + data.message + ')', 5000);
+	}
+
+	// if we have made it this far, assume the user logged in correctly
+	// assume data has rows
+	if(!data.entries) {
+		return showAlert('Unable to fetch event data from the database.', 5000);
+	}
+
+	resultsContent.innerHTML = '';
+
+	var student = {
+		id: data.student_id,
+		name: data.student_id,
+		crn: null,
+		crncourse: null,
+		crntitle: null,
+		email: null,
+		survey: null,
+		events: [],
+		all_events: {}
+	}
+
+	// loop through all entries to determine if exists
+	for(var i = 0; i < data.entries.length; i++) {
+		
+		if(data.entries[i].first && student.name == data.student_id) {
+			student.name = data.entries[i].first + ' ' + data.entries[i].last;
+		}
+
+		if(!student.crn && data.entries[i].crn) {
+			student.crn = data.entries[i].crn;
+		}
+
+		if(!student.crncourse && data.entries[i].crncourse) {
+			student.crncourse = data.entries[i].crncourse;
+		}
+
+		if(!student.crntitle && data.entries[i].crntitle) {
+			student.crntitle = data.entries[i].crntitle;
+		}
+
+		if(!student.email && data.entries[i].email) {
+			student.email = data.entries[i].email;
+		}
+
+		if(!student.major && data.entries[i].major) {
+			student.major = data.entries[i].major;
+		}
+
+		if(!student.gradyear && data.entries[i].gradyear) {
+			student.gradyear = data.entries[i].gradyear;
+		}
+
+		if(!student.survey && data.entries[i].survey) {
+			student.survey = true;
+		}
+
+		// determine if event is valid
+		if(data.entries[i].id != null) {
+			student.events.push({
+				event_id: data.entries[i].event_id,
+				event_name: data.entries[i].event_name,
+				year: data.entries[i].year,
+				semester: data.entries[i].semester
+			});
+		}
+
+		if(student.all_events[data.entries[i].event_id]) {
+			continue;
+		}
+
+		student.all_events[data.entries[i].event_id] = {
+			attended: data.entries[i].id ? true : false,
+			event_id: data.entries[i].event_id,
+			event_name: data.entries[i].event_name,
+			year: data.entries[i].year,
+			semester: data.entries[i].semester
+		};
+
+
+	}
+
+	// student profile header container
+	var studentDataHeaderContainer = document.createElement('div');
+	studentDataHeaderContainer.className = 'survey-data-container';
+	studentDataHeaderContainer.id = 'student-data-header-container';
+
+	// loop through all entries to determine
+	if(student.name && student.email) {
+		studentDataHeaderContainer.innerHTML = '<a href="mailto:' + student.email + '">' + student.name + '</a> (' + student.id + ')';
+	} else {
+		studentDataHeaderContainer.innerHTML = student.name;
+	}
+
+	resultsContent.appendChild(studentDataHeaderContainer);
+
+	// student information container
+	var studentDataBodyContainer = document.createElement('div');
+	studentDataBodyContainer.className = 'survey-data-container';
+	studentDataBodyContainer.id = 'student-data-body-container';
+
+	var hasSurvey = student.survey ? '' : 'not';
+	var studentDataText = '';
+	if(student.events.length > 7) {
+		studentDataText += 'This student is eligible for extra credit, has attended ' + student.events.length + ' events this semester, and has ' + hasSurvey + ' submitted the extra credit survey. ';
+	} else {
+		studentDataText += 'This student is not eligible for extra credit, and has been to ' + student.events.length + ' events this semester. ';
+	}
+
+	if(student.major && student.gradyear) {
+		studentDataText += 'They are currently majoring in ' + student.major + ', with a graduation year in ' + student.gradyear + '.';
+	}
+
+	studentDataBodyContainer.innerHTML = studentDataText;
+	resultsContent.appendChild(studentDataBodyContainer);
+
+	var studentEventBodyContainer = document.createElement('div');
+	studentEventBodyContainer.className = 'survey-data-container';
+
+	var table = document.createElement('table');
+	table.className = 'events-table';
+	table.border = '0';
+
+	studentEventBodyContainer.appendChild(table);
+
+	for(var i in student.all_events) {
+
+		var tr = document.createElement('tr');
+		var color = randomColor({
+			luminosity: 'light',
+			hue: 'blue'
+		});
+
+		if(!student.all_events[i].attended) {
+			color = 'rgba(255,255,255,0.25); text-decoration:line-through';
+		} 
+		
+		tr.innerHTML = '<td style="color:' + color + ';">' + tableIdToDate(student.all_events[i].event_id) + '</td>';
+		tr.innerHTML += '<td style="text-align:right;color:' + color + ';">' + student.all_events[i].event_name + '</td>';
+
+		table.appendChild(tr);
+	}
+
+	resultsContent.appendChild(studentEventBodyContainer);
+
+}
+
 // received when an admin is authenticated with the
 // server, or when an admin authentication response
 // is received from the server
@@ -581,7 +768,14 @@ function handleServerAdminRegisterResponse(data) {
 	}
 
 	resultsContent.innerHTML = '';
+
+	// admin actions container (buttons)
+	var adminActionsContainer = document.createElement('div');
+	adminActionsContainer.className = 'survey-data-container buttons-container';
+	adminActionsContainer.id = 'admin-actions-container';
 	
+	resultsContent.appendChild(adminActionsContainer);
+
 	// create extra credit stats container
 	var extraCreditStatsContainer = document.createElement('div');
 	extraCreditStatsContainer.className = 'survey-data-container';
@@ -606,8 +800,21 @@ function handleServerAdminRegisterResponse(data) {
 	var sectionTwoStudents = [];
 	var sectionThreeStudents = [];
 
-	// request survey data
-	socket.emit('registerapiadminsurveydata');
+	// create admin actions section buttons
+	var adminButtonEditStudent = document.createElement('span');
+	adminButtonEditStudent.className = 'admin-button';
+	adminButtonEditStudent.id = 'admin-button-edit-student';
+	adminButtonEditStudent.innerHTML = '<span class="fa fa-clipboard">&nbsp;&nbsp;</span>Edit A Student Profile';
+
+	adminButtonEditStudentInput = document.createElement('input');
+	adminButtonEditStudentInput.className = 'admin-button-input';
+	adminButtonEditStudentInput.id = 'admin-button-input-edit-student';
+	adminButtonEditStudentInput.placeholder = 'Enter a student ID...';
+
+	adminActionsContainer.appendChild(adminButtonEditStudent);
+	adminActionsContainer.appendChild(adminButtonEditStudentInput);
+
+	adminButtonEditStudent._input = adminButtonEditStudentInput;
 
 	// create top text
 	var ecStudentCount = 0;
@@ -746,6 +953,47 @@ function handleServerAdminRegisterResponse(data) {
 		$(this.parentNode.getElementsByClassName('events-table-student-email').item(0)).fadeIn('normal');
 	});
 
+	// add event listener to admin buttons
+	$('#admin-button-edit-student').on('click', function() {
+		$(this).fadeOut('fast', function() {
+			//console.log(document.getElementById('admin-button-edit-student')._input);
+			$('#admin-button-input-edit-student').fadeIn('fast').focus().on('keypress', function(e) {
+
+				if(e. keyCode != 13) {
+					return;
+				}
+
+				if(!this.value.match(/^[0-9]{8,10}$/gi)) {
+					return showAlert('Please enter a valid student ID', 5000);
+				}
+
+				var that = this;
+				that._placeholder = that.placeholder;
+				that.placeholder = 'Loading, please wait...';
+
+				socket.emit('registerapiadminstudentdata', { id: that.value });	
+				
+				that.value = '';
+
+				// receive and parse individual student data on the admin page
+				onSocketResponse('registerapiadminstudentdataresponse', function(data) {
+					
+					if(that._placeholder) {
+						that.placeholder = that._placeholder;
+					}
+
+					handleServerAdminStudentDataResponse(data);
+
+				}, true);
+
+			});
+		});
+				
+	});
+
+	// request survey data
+	socket.emit('registerapiadminsurveydata');
+
 	// receive and parse survey and extra credit data
 	// we do it here so that we can add download click listener to spreadsheet link
 	onSocketResponse('registerapiadminsurveydataresponse', function(data) {
@@ -855,7 +1103,8 @@ function handleServerAdminRegisterResponse(data) {
 
 		// Append extra credit container information here as well. This is so that the click
 		// event listener is applied to all links, regardless of which one loads first.
-		$('#extra-credit-data-container').html('Welcome, A total of <span style="color:#9a99ff;">' + data.ecEntries.length + ' students have chosen a course</span> for their extra credit.');
+		$('#extra-credit-data-container').html('');
+		$('#extra-credit-data-container').append('Welcome, A total of <span style="color:#9a99ff;">' + data.ecEntries.length + ' students have chosen a course</span> for their extra credit.');
 		$('#survey-data-container').html('A total of <span style="color:#9a99ff;">' + surveyResponseCount + ' students have completed surveys</span>.');
 			
 		if(surveyParsedResponses.length) {
@@ -905,7 +1154,7 @@ function handleServerAdminRegisterResponse(data) {
 				that.isBusy = false;
 				$(that).animate({ opacity: 1.0 }, 500);
 				window.location.assign(data.url);
-			});
+			}, true);
 
 		});
 
@@ -939,11 +1188,6 @@ function handleStudentRegisterLastUpdatedResponse(data) {
  * student ID.
  */
 function handleServerStudentRegisterResponse(data) {
-
-	// replace table id underscores with slashes
-	function tableIdToDate(id) {
-		return id.replace(/\_/gi, '\/');
-	}
 
 	// valid entries are ones with non null student ids
 	var validEntryCount = 0;

@@ -208,9 +208,30 @@ a {
 			width: 100%;
 		}
 
-		#results-panel .editor .editor-wrapper .editor-content .download-excel {
+		#results-panel .editor .editor-wrapper .editor-content .buttons-container {
+
+		}
+			#results-panel .editor .editor-wrapper .editor-content .buttons-container .admin-button {
 				cursor: pointer;
 			}
+				#results-panel .editor .editor-wrapper .editor-content .buttons-container .admin-button:hover {
+					text-decoration: underline;
+				}
+
+				#results-panel .editor .editor-wrapper .editor-content .buttons-container .admin-button-input {
+					background: transparent;
+					border: 0;
+					color: white;
+					display: none;
+					font: inherit;
+					margin: 0;
+					padding: 0;
+					text-align: center;
+				}
+
+		#results-panel .editor .editor-wrapper .editor-content .download-excel {
+				cursor: pointer;
+		}
 				#results-panel .editor .editor-wrapper .editor-content .download-excel:hover {
 					text-decoration: underline;
 				}
