@@ -823,14 +823,14 @@ function handleServerAdminRegisterResponse(data) {
 
 	resultsContent.appendChild(tableSpan);	
 
-	// draw table of students with 12 or more events
+	// draw table of students with 14 or more events
 	var table = document.createElement('table');
 	table.className = 'events-table';
 	table.border = '0';
 
 	for(var i in students) {
 
-		if(students[i].events.length < 12) {
+		if(students[i].events.length < 14) {
 			continue;
 		}
 
@@ -1220,9 +1220,9 @@ function handleServerStudentRegisterResponse(data) {
 		var plural = 's';
 		var evtPlural = 's';
 
-		if(validEntryCount >= 8) {
+		if(validEntryCount >= 13) {
 			extraCredit = 1;
-			if(validEntryCount >= 12) {
+			if(validEntryCount >= 14) {
 				extraCredit = 2;
 			}
 		}
@@ -1275,7 +1275,7 @@ function handleServerStudentRegisterResponse(data) {
 
 		// populate information on course chosen by student
 		// only if student is eligible for bonus points
-		if(validEntryCount >= 8) {
+		if(validEntryCount >= 13) {
 
 			var extraCreditInput = document.createElement('input');
 			extraCreditInput.type = "text";
