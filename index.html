@@ -877,7 +877,7 @@ function handleServerAdminRegisterResponse(data) {
 
 	for(var i in students) {
 
-		if(students[i].events.length < 8 || students[i].events.length > 11) {
+		if(students[i].events.length < 12 || students[i].events.length > 13) {
 			continue;
 		}
 
@@ -1220,7 +1220,7 @@ function handleServerStudentRegisterResponse(data) {
 		var plural = 's';
 		var evtPlural = 's';
 
-		if(validEntryCount >= 13) {
+		if(validEntryCount >= 12) {
 			extraCredit = 1;
 			if(validEntryCount >= 14) {
 				extraCredit = 2;
@@ -1275,7 +1275,7 @@ function handleServerStudentRegisterResponse(data) {
 
 		// populate information on course chosen by student
 		// only if student is eligible for bonus points
-		if(validEntryCount >= 13) {
+		if(validEntryCount >= 12) {
 
 			var extraCreditInput = document.createElement('input');
 			extraCreditInput.type = "text";
