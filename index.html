@@ -945,7 +945,7 @@ function handleServerAdminRegisterResponse(data) {
 	resultsContent.appendChild(table);
 
 	// update stats
-	tableSpan.innerHTML = 'Displaying <span style="color:rgb(189,224,216)">' + ecStudentCount + ' students</span> that have earned <span style="color:rgb(224,189,215);">zero points of extra credit</span> and have gone to <span style="color:#7ce2ef;">less than eight events</span>. <span id="students_extra_credit_0" class="download-excel download-excel-no-points">Click to <span style="color:#b4a9fc;">download spreadsheet</span></span>.';
+	tableSpan.innerHTML = 'Displaying <span style="color:rgb(189,224,216)">' + ecStudentCount + ' students</span> that have earned <span style="color:rgb(224,189,215);">zero points of extra credit</span> and have gone to <span style="color:#7ce2ef;">less than 12 events</span>. <span id="students_extra_credit_0" class="download-excel download-excel-no-points">Click to <span style="color:#b4a9fc;">download spreadsheet</span></span>.';
 
 	// add event listeners to table rows
 	$('.events-table-student-entry').on('click', function() {
