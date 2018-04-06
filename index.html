@@ -26,6 +26,10 @@ var pageLoadingErrorTimeout = null;
 
 var response_callbacks = {};
 
+// Change these values to whatever Clare says.
+var NUM_EVENTS_FULL_CREDIT = 12;
+var NUM_EVENTS_HALF_CREDIT = 10;
+
 if(window.location.hostname == 'localhost') {
 	serverURL = 'http://localhost:7777';
 }
@@ -823,14 +827,14 @@ function handleServerAdminRegisterResponse(data) {
 
 	resultsContent.appendChild(tableSpan);	
 
-	// draw table of students with 14 or more events
+	// draw table of students with the events required for full credit
 	var table = document.createElement('table');
 	table.className = 'events-table';
 	table.border = '0';
 
 	for(var i in students) {
 
-		if(students[i].events.length < 14) {
+		if(students[i].events.length < NUM_EVENTS_FULL_CREDIT) {
 			continue;
 		}
 
@@ -852,7 +856,7 @@ function handleServerAdminRegisterResponse(data) {
 	resultsContent.appendChild(table);
 
 	// update stats
-	tableSpan.innerHTML = 'Displaying <span style="color:rgb(189,224,216)">' + ecStudentCount + ' students</span> that have earned <span style="color:rgb(224,189,215);">two points of extra credit</span> and have gone to <span style="color:#7ce2ef;">14 or more events</span>. <span id="students_extra_credit_2" class="download-excel download-excel-two-points">Click to <span style="color:#b4a9fc;">download spreadsheet</span></span>.';
+	tableSpan.innerHTML = 'Displaying <span style="color:rgb(189,224,216)">' + ecStudentCount + ' students</span> that have earned <span style="color:rgb(224,189,215);">two points of extra credit</span> and have gone to <span style="color:#7ce2ef;">' + NUM_EVENTS_FULL_CREDIT +' or more events</span>. <span id="students_extra_credit_2" class="download-excel download-excel-two-points">Click to <span style="color:#b4a9fc;">download spreadsheet</span></span>.';
 
 
 	// separate last section from new section
@@ -870,14 +874,14 @@ function handleServerAdminRegisterResponse(data) {
 
 	resultsContent.appendChild(tableSpan);
 
-	// draw table of students with 12 or more events
+	// draw table of students with events required for half credit
 	table = document.createElement('table');
 	table.className = 'events-table';
 	table.border = '0';
 
 	for(var i in students) {
 
-		if(students[i].events.length < 12 || students[i].events.length > 13) {
+		if(students[i].events.length < NUM_EVENTS_HALF_CREDIT || students[i].events.length > NUM_EVENTS_FULL_CREDIT-1) {
 			continue;
 		}
 
@@ -899,7 +903,7 @@ function handleServerAdminRegisterResponse(data) {
 	resultsContent.appendChild(table);
 
 	// update stats
-	tableSpan.innerHTML = 'Displaying <span style="color:rgb(189,224,216)">' + ecStudentCount + ' students</span> that have earned <span style="color:rgb(224,189,215);">one point of extra credit</span> and have gone to <span style="color:#7ce2ef;">12 or more events</span>. <span id="students_extra_credit_1" class="download-excel download-excel-one-point">Click to <span style="color:#b4a9fc;">download spreadsheet</span></span>.';
+	tableSpan.innerHTML = 'Displaying <span style="color:rgb(189,224,216)">' + ecStudentCount + ' students</span> that have earned <span style="color:rgb(224,189,215);">one point of extra credit</span> and have gone to <span style="color:#7ce2ef;">' + NUM_EVENTS_HALF_CREDIT + ' or more events</span>. <span id="students_extra_credit_1" class="download-excel download-excel-one-point">Click to <span style="color:#b4a9fc;">download spreadsheet</span></span>.';
 
 	// separate last section from new section
 	resultsContent.innerHTML += '<div class="spacer"></div>';
@@ -916,7 +920,7 @@ function handleServerAdminRegisterResponse(data) {
 
 	resultsContent.appendChild(tableSpan);
 
-	// draw table of students with 12 or more events
+	// draw table of students with events required for half credit
 	table = document.createElement('table');
 	table.className = 'events-table';
 	table.border = '0';
@@ -945,7 +949,7 @@ function handleServerAdminRegisterResponse(data) {
 	resultsContent.appendChild(table);
 
 	// update stats
-	tableSpan.innerHTML = 'Displaying <span style="color:rgb(189,224,216)">' + ecStudentCount + ' students</span> that have earned <span style="color:rgb(224,189,215);">zero points of extra credit</span> and have gone to <span style="color:#7ce2ef;">less than 12 events</span>. <span id="students_extra_credit_0" class="download-excel download-excel-no-points">Click to <span style="color:#b4a9fc;">download spreadsheet</span></span>.';
+	tableSpan.innerHTML = 'Displaying <span style="color:rgb(189,224,216)">' + ecStudentCount + ' students</span> that have earned <span style="color:rgb(224,189,215);">zero points of extra credit</span> and have gone to <span style="color:#7ce2ef;">less than ' + NUM_EVENTS_HALF_CREDIT + ' events</span>. <span id="students_extra_credit_0" class="download-excel download-excel-no-points">Click to <span style="color:#b4a9fc;">download spreadsheet</span></span>.';
 
 	// add event listeners to table rows
 	$('.events-table-student-entry').on('click', function() {
@@ -1220,9 +1224,9 @@ function handleServerStudentRegisterResponse(data) {
 		var plural = 's';
 		var evtPlural = 's';
 
-		if(validEntryCount >= 12) {
+		if(validEntryCount >= NUM_EVENTS_HALF_CREDIT) {
 			extraCredit = 1;
-			if(validEntryCount >= 14) {
+			if(validEntryCount >= NUM_EVENTS_FULL_CREDIT) {
 				extraCredit = 2;
 			}
 		}
@@ -1275,7 +1279,7 @@ function handleServerStudentRegisterResponse(data) {
 
 		// populate information on course chosen by student
 		// only if student is eligible for bonus points
-		if(validEntryCount >= 12) {
+		if(validEntryCount >= NUM_EVENTS_HALF_CREDIT) {
 
 			var extraCreditInput = document.createElement('input');
 			extraCreditInput.type = "text";
