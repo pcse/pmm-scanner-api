@@ -918,14 +918,21 @@ function initSocketListener() {
 				student_id="' + clientData.student_id + '" AND semester="' + date.getCurrentSemester() + '" \
 				AND year="' + date.getCurrentYear() + '"', function(err, rows) {
 
-				if(rows.length) {
-					mysql.query('UPDATE `chosencourses` SET crn="' + clientData.crn + '" WHERE \
-						student_id="' + clientData.student_id + '" AND semester="' + date.getCurrentSemester() + '" \
-						AND year="' + date.getCurrentYear() + '"', onCrnHandle);
-				} else {
-					mysql.query('INSERT INTO `chosencourses` (crn, student_id, semester, year) \
-						VALUES ("' + clientData.crn + '", "' + clientData.student_id + '", \
-							"' + date.getCurrentSemester() + '", "' + date.getCurrentYear() + '")', onCrnHandle);
+				mysql.query('SELECT instructor FROM `coursedata` WHERE crn="' + clientData.crn + '"', instructorQueryDone);
+				function instructorQueryDone(err, rows){
+
+					var instructor = rows[0];
+					
+					if(rows.length) {
+						mysql.query('UPDATE `chosencourses` SET crn="' + clientData.crn + '", instructor = "' + instructor + '" WHERE \
+							student_id="' + clientData.student_id + '" AND semester="' + date.getCurrentSemester() + '" \
+							AND year="' + date.getCurrentYear() + '"', onCrnHandle);
+					} else {
+
+						mysql.query('INSERT INTO `chosencourses` (crn, student_id, semester, year) \
+							VALUES ("' + clientData.crn + '", "' + clientData.student_id + '", \
+								"' + date.getCurrentSemester() + '", "' + date.getCurrentYear() + '", "' + instructor + '")', onCrnHandle);
+					}
 				}
 
 				function onCrnHandle(err) {
