@@ -921,8 +921,9 @@ function initSocketListener() {
 				mysql.query('SELECT instructor FROM `coursedata` WHERE crn="' + clientData.crn + '"', instructorQueryDone);
 				function instructorQueryDone(err, rows){
 
+					console.log(rows[0]);
 					var instructor = rows[0];
-					
+
 					if(rows.length) {
 						mysql.query('UPDATE `chosencourses` SET crn="' + clientData.crn + '", instructor = "' + instructor + '" WHERE \
 							student_id="' + clientData.student_id + '" AND semester="' + date.getCurrentSemester() + '" \
