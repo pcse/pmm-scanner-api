@@ -918,11 +918,11 @@ function initSocketListener() {
 				student_id="' + clientData.student_id + '" AND semester="' + date.getCurrentSemester() + '" \
 				AND year="' + date.getCurrentYear() + '"', function(err, rows) {
 
-				mysql.query('SELECT instructor FROM `coursedata` WHERE crn="' + clientData.crn + '"', instructorQueryDone);
+				mysql.query('SELECT * FROM `coursedata` WHERE crn="' + clientData.crn + '"', instructorQueryDone);
 				function instructorQueryDone(err, rows){
 
-					console.log(rows[0]);
-					var instructor = rows[0];
+					console.log("logging row: " + rows[0]);
+					var instructor = rows[0].instructor	;
 
 					if(rows.length) {
 						mysql.query('UPDATE `chosencourses` SET crn="' + clientData.crn + '", instructor = "' + instructor + '" WHERE \
