@@ -1540,19 +1540,21 @@ function handleServerStudentRegisterSurveyResponse(data) {
 	var crnQuestionHeader = document.createElement('span');
 	crnQuestionHeader.className = 'question_header';
 	crnQuestionHeader.innerHTML = '<span class="question_num">' + (parsedQuestions.length + 1) + '.</span> ';
-	crnQuestionHeader.innerHTML += '<span class="question_title">Please enter the <b>CRN</b> (Course Registration Number) of the course you would like to apply your extra credit to below.</span>';
+	//crnQuestionHeader.innerHTML += '<span class="question_title">Please enter the <b>CRN</b> (Course Registration Number) of the course you would like to apply your extra credit to below.</span>';
 
-	var crnQuestionBody = document.createElement('span');
-	crnQuestionBody.className = 'question_body';
+	crnQuestionHeader.innerHTML += '<span class="question_title">Thank you for completing the survey. Please submit and click back on the survey link to enter the <b>CRN</b> (Course Registration Number) of the course you would like to apply extra credit to.</span>';
 
-	var crnQuestionInput = document.createElement('input');
-	crnQuestionInput.className = 'question_text_input';
-	crnQuestionInput.placeholder = 'Please type your CRN here.';
+	// var crnQuestionBody = document.createElement('span');
+	// crnQuestionBody.className = 'question_body';
 
-	crnQuestionBody.appendChild(crnQuestionInput);
-	crnQuestion.appendChild(crnQuestionHeader);
-	crnQuestion.appendChild(crnQuestionBody);
-	questionsContainer.appendChild(crnQuestion);
+	// var crnQuestionInput = document.createElement('input');
+	// crnQuestionInput.className = 'question_text_input';
+	// crnQuestionInput.placeholder = 'Please type your CRN here.';
+
+	// crnQuestionBody.appendChild(crnQuestionInput);
+	// crnQuestion.appendChild(crnQuestionHeader);
+	// crnQuestion.appendChild(crnQuestionBody);
+	// questionsContainer.appendChild(crnQuestion);
 
 
 	// append submit button
