@@ -1551,7 +1551,7 @@ function handleServerStudentRegisterSurveyResponse(data) {
 	crnQuestionInput.className = 'question_text_input';
 	//crnQuestionInput.placeholder = 'Please type your CRN here.';
 
-	crnQuestionBody.appendChild(crnQuestionInput);
+	//crnQuestionBody.appendChild(crnQuestionInput);
 	crnQuestion.appendChild(crnQuestionHeader);
 	crnQuestion.appendChild(crnQuestionBody);
 	questionsContainer.appendChild(crnQuestion);
@@ -1580,10 +1580,10 @@ function handleServerStudentRegisterSurveyResponse(data) {
 		if(!allQuestionsAnswered) {
 			submitButton.hasBeenClicked = false;
 			return showAlert('Please answer all questions before pressing submit.');
-		} else if(!crnQuestionInput.value || !crnQuestionInput.value.match(/^[0-9]{4}$/gi)) {
-			submitButton.hasBeenClicked = false;
-			return showAlert('Please provide a valid Course Registration Number!');
-		}
+		} //else if(!crnQuestionInput.value || !crnQuestionInput.value.match(/^[0-9]{4}$/gi)) {
+			//submitButton.hasBeenClicked = false;
+			//return showAlert('Please provide a valid Course Registration Number!');
+		//}
 
 		submitButton.innerHTML = '<span>Loading, please wait...</span>';
 
