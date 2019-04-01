@@ -1547,14 +1547,14 @@ function handleServerStudentRegisterSurveyResponse(data) {
 	var crnQuestionBody = document.createElement('span');
 	crnQuestionBody.className = 'question_body';
 
-	// var crnQuestionInput = document.createElement('input');
-	// crnQuestionInput.className = 'question_text_input';
-	// crnQuestionInput.placeholder = 'Please type your CRN here.';
+	var crnQuestionInput = document.createElement('input');
+	crnQuestionInput.className = 'question_text_input';
+	crnQuestionInput.placeholder = 'Please type your CRN here.';
 
-	// crnQuestionBody.appendChild(crnQuestionInput);
+	crnQuestionBody.appendChild(crnQuestionInput);
 	crnQuestion.appendChild(crnQuestionHeader);
-	// crnQuestion.appendChild(crnQuestionBody);
-	// questionsContainer.appendChild(crnQuestion);
+	crnQuestion.appendChild(crnQuestionBody);
+	questionsContainer.appendChild(crnQuestion);
 
 
 	// append submit button
