@@ -1589,7 +1589,7 @@ function handleServerStudentRegisterSurveyResponse(data) {
 
 		// if we have made it this far, assume everything is good to go
 		socket.emit('registerapistudentsurveysubmit', {
-			crn: crnQuestionInput.value,
+			//crn: crnQuestionInput.value,
 			entries: parsedQuestions,
 			student_id: data.id
 		});
