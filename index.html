@@ -838,8 +838,8 @@ function handleServerAdminRegisterResponse(data) {
 
 	for(var i in students) {
 
-		if(students[i].events.length < NUM_EVENTS_FULL_CREDIT) {
-			continue;
+		if(students[i].events.length < 0) {
+		 	continue;
 		}
 
 		ecStudentCount++;
@@ -860,7 +860,7 @@ function handleServerAdminRegisterResponse(data) {
 	resultsContent.appendChild(table);
 
 	// update stats
-	tableSpan.innerHTML = 'Displaying <span style="color:rgb(189,224,216)">' + ecStudentCount + ' students</span> that have earned <span style="color:rgb(224,189,215);">two points of extra credit</span> and have gone to <span style="color:#7ce2ef;">' + NUM_EVENTS_FULL_CREDIT +' or more events</span>. <span id="students_extra_credit_2" class="download-excel download-excel-two-points">Click to <span style="color:#b4a9fc;">download spreadsheet</span></span>.';
+	tableSpan.innerHTML = 'Displaying <span style="color:rgb(189,224,216)">' + ecStudentCount + ' students</span> that have earned <span style="color:rgb(224,189,215);"> extra credit</span>. <span id="students_extra_credit_2" class="download-excel download-excel-two-points">Click to <span style="color:#b4a9fc;">download spreadsheet</span></span>.';
 
 
 	// separate last section from new section
@@ -872,42 +872,42 @@ function handleServerAdminRegisterResponse(data) {
 
 	// create view for students with one point of extra credit
 	// reset count and dom pointers
-	ecStudentCount = 0;
-	tableSpan = document.createElement('span');
-	tableSpan.innerHTML = 'Loading, please wait...';
+	// ecStudentCount = 0;
+	// tableSpan = document.createElement('span');
+	// tableSpan.innerHTML = 'Loading, please wait...';
 
-	resultsContent.appendChild(tableSpan);
+	// resultsContent.appendChild(tableSpan);
 
-	// draw table of students with events required for half credit
-	table = document.createElement('table');
-	table.className = 'events-table';
-	table.border = '0';
+	// // draw table of students with events required for half credit
+	// table = document.createElement('table');
+	// table.className = 'events-table';
+	// table.border = '0';
 
-	for(var i in students) {
+	// for(var i in students) {
 
-		if(students[i].events.length < NUM_EVENTS_HALF_CREDIT || students[i].events.length > NUM_EVENTS_FULL_CREDIT-1) {
-			continue;
-		}
+	// 	if(students[i].events.length < NUM_EVENTS_HALF_CREDIT || students[i].events.length > NUM_EVENTS_FULL_CREDIT-1) {
+	// 		continue;
+	// 	}
 
-		ecStudentCount++;
-		sectionTwoStudents.push(students[i]);
+	// 	ecStudentCount++;
+	// 	sectionTwoStudents.push(students[i]);
 
-		var tr = document.createElement('tr');
-		var color = randomColor({
-			luminosity: 'light',
-			hue: 'blue'
-		});
+	// 	var tr = document.createElement('tr');
+	// 	var color = randomColor({
+	// 		luminosity: 'light',
+	// 		hue: 'blue'
+	// 	});
 
-		tr.innerHTML = '<td style="color:' + color + ';min-width:225px;"><span class="events-table-student-email"><a href="mailto:' + students[i].email + '">' + students[i].email + '</a></span><span class="events-table-student-entry">' + students[i].first + ' ' + students[i].last + '</span></td>';
-		tr.innerHTML += '<td style="text-align:right;color:' + color + ';">' + students[i].events.length + ' events' + '</td>';
-		tr.innerHTML += '<td style="text-align:right;color:' + color + ';">' + (students[i].crn ? students[i].crn : '<span style="opacity:0.45;">No course chosen</span>') + '</td>';
-		table.appendChild(tr);
-	}
+	// 	tr.innerHTML = '<td style="color:' + color + ';min-width:225px;"><span class="events-table-student-email"><a href="mailto:' + students[i].email + '">' + students[i].email + '</a></span><span class="events-table-student-entry">' + students[i].first + ' ' + students[i].last + '</span></td>';
+	// 	tr.innerHTML += '<td style="text-align:right;color:' + color + ';">' + students[i].events.length + ' events' + '</td>';
+	// 	tr.innerHTML += '<td style="text-align:right;color:' + color + ';">' + (students[i].crn ? students[i].crn : '<span style="opacity:0.45;">No course chosen</span>') + '</td>';
+	// 	table.appendChild(tr);
+	// }
 
-	resultsContent.appendChild(table);
+	// resultsContent.appendChild(table);
 
-	// update stats
-	tableSpan.innerHTML = 'Displaying <span style="color:rgb(189,224,216)">' + ecStudentCount + ' students</span> that have earned <span style="color:rgb(224,189,215);">one point of extra credit</span> and have gone to <span style="color:#7ce2ef;">' + NUM_EVENTS_HALF_CREDIT + ' or more events</span>. <span id="students_extra_credit_1" class="download-excel download-excel-one-point">Click to <span style="color:#b4a9fc;">download spreadsheet</span></span>.';
+	// // update stats
+	// tableSpan.innerHTML = 'Displaying <span style="color:rgb(189,224,216)">' + ecStudentCount + ' students</span> that have earned <span style="color:rgb(224,189,215);">one point of extra credit</span> and have gone to <span style="color:#7ce2ef;">' + NUM_EVENTS_HALF_CREDIT + ' or more events</span>. <span id="students_extra_credit_1" class="download-excel download-excel-one-point">Click to <span style="color:#b4a9fc;">download spreadsheet</span></span>.';
 
 	// separate last section from new section
 	resultsContent.innerHTML += '<div class="spacer"></div>';
