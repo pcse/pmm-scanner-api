@@ -29,6 +29,7 @@ var response_callbacks = {};
 // Change these values to whatever Clare says.
 var NUM_EVENTS_FULL_CREDIT = 13;
 var NUM_EVENTS_HALF_CREDIT = 10;
+var TOTAL_NUM_EVENTS = 14;
 
 if(window.location.hostname == 'localhost') {
 	serverURL = 'http://localhost:7777';
@@ -1227,12 +1228,16 @@ function handleServerStudentRegisterResponse(data) {
 		var plural = 's';
 		var evtPlural = 's';
 
-		if(validEntryCount >= NUM_EVENTS_HALF_CREDIT) {
-			extraCredit = 1;
-			if(validEntryCount >= NUM_EVENTS_FULL_CREDIT) {
-				extraCredit = 2;
-			}
-		}
+		// if(validEntryCount >= NUM_EVENTS_HALF_CREDIT) {
+		// 	extraCredit = 1;
+		// 	if(validEntryCount >= NUM_EVENTS_FULL_CREDIT) {
+		// 		extraCredit = 2;
+		// 	}
+		// }
+
+		// Make the extra credit a percentage of events attended instead of having it based on hard event attendance requirements
+		extraCredit = (2 / TOTAL_NUM_EVENTS).toFixed(2);
+
 
 		if(extraCredit == 1) {
 			plural = '';
