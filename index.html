@@ -755,7 +755,7 @@ function handleServerAdminRegisterResponse(data) {
 				events:[],
 				event_ids: {},
 				crn: data.entries[i].crn,
-				course_title: data.entries[i].crncourses
+				points_earned: 0.00
 			};
 
 			studentCount++;
@@ -773,6 +773,9 @@ function handleServerAdminRegisterResponse(data) {
 			year: data.entries[i].year,
 			semester: data.entries[i].semester
 		});
+
+		//((2 / TOTAL_NUM_EVENTS) * validEntryCount).toFixed(2);
+		students[data.entries[i].id].points_earned = ((2 / TOTAL_NUM_EVENTS) * students[data.entries[i].id].events.length).toFixed(2);
 	}
 
 	resultsContent.innerHTML = '';
