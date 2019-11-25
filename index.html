@@ -1244,6 +1244,9 @@ function handleServerStudentRegisterResponse(data) {
 
 		// Make the extra credit a percentage of events attended instead of having it based on hard event attendance requirements
 		extraCredit = ((2 / NUM_EVENTS_FULL_CREDIT) * validEntryCount).toFixed(2);
+		if (extraCredit > MAX_POINTS){
+			extraCredit = MAX_POINTS;
+		}
 
 
 		if(extraCredit == 1) {
