@@ -1297,7 +1297,8 @@ function handleServerStudentRegisterResponse(data) {
 
 		// populate information on course chosen by student
 		// only if student is eligible for bonus points
-		if(validEntryCount >= NUM_EVENTS_HALF_CREDIT) {
+		//if(validEntryCount >= NUM_EVENTS_HALF_CREDIT) {
+		if (validEntryCount > 0) {
 
 			var extraCreditInput = document.createElement('input');
 			extraCreditInput.type = "text";
