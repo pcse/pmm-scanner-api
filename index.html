@@ -572,7 +572,7 @@ function handleServerAdminStudentDataResponse(data) {
 	isPage = PAGE_ADMIN_AUTH;
 
 	if(data.error) {
-		return showAlert('An error occurred while contacting the authentication server. Please try again later. (' + data.message + ')', 5000);
+		return showAlert('An error occurred while fetching student profile data. Please try again later. (' + data.message + ')', 5000);
 	}
 
 	// if we have made it this far, assume the user logged in correctly
