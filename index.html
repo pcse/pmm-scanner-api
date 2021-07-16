@@ -583,25 +583,30 @@ function handleServerAdminStudentDataResponse(data) {
 
 	resultsContent.innerHTML = '';
 
+	var studentData = data.student_data || {};
+
 	var student = {
 		id: data.student_id,
 		name: data.student_id,
 		crn: null,
 		crncourse: null,
 		crntitle: null,
-		email: null,
+		email: studentData.email,
+		major: studentData.major,
+		gradyear: studentData.year,
 		survey: null,
 		events: [],
 		all_events: {}
+	};
+
+	var allEventsCount = 0;
+
+	if (studentData.first && studentData.last) {
+		student.name = studentData.first + ' ' + studentData.last;
 	}
 
 	// loop through all entries to determine if exists
 	for(var i = 0; i < data.entries.length; i++) {
-		
-		if(data.entries[i].first && student.name == data.student_id) {
-			student.name = data.entries[i].first + ' ' + data.entries[i].last;
-		}
-
 		if(!student.crn && data.entries[i].crn) {
 			student.crn = data.entries[i].crn;
 		}
@@ -612,18 +617,6 @@ function handleServerAdminStudentDataResponse(data) {
 
 		if(!student.crntitle && data.entries[i].crntitle) {
 			student.crntitle = data.entries[i].crntitle;
-		}
-
-		if(!student.email && data.entries[i].email) {
-			student.email = data.entries[i].email;
-		}
-
-		if(!student.major && data.entries[i].major) {
-			student.major = data.entries[i].major;
-		}
-
-		if(!student.gradyear && data.entries[i].gradyear) {
-			student.gradyear = data.entries[i].gradyear;
 		}
 
 		if(!student.survey && data.entries[i].survey) {
@@ -644,6 +637,7 @@ function handleServerAdminStudentDataResponse(data) {
 			continue;
 		}
 
+		allEventsCount++;
 		student.all_events[data.entries[i].event_id] = {
 			attended: data.entries[i].id ? true : false,
 			event_id: data.entries[i].event_id,
@@ -660,11 +654,10 @@ function handleServerAdminStudentDataResponse(data) {
 	studentDataHeaderContainer.className = 'survey-data-container';
 	studentDataHeaderContainer.id = 'student-data-header-container';
 
-	// loop through all entries to determine
 	if(student.name && student.email) {
 		studentDataHeaderContainer.innerHTML = '<a href="mailto:' + student.email + '">' + student.name + '</a> (' + student.id + ')';
 	} else {
-		studentDataHeaderContainer.innerHTML = student.name;
+		studentDataHeaderContainer.innerHTML = student.name + ' (' + student.id + ')';
 	}
 
 	resultsContent.appendChild(studentDataHeaderContainer);
@@ -683,7 +676,7 @@ function handleServerAdminStudentDataResponse(data) {
 	}
 
 	if(student.major && student.gradyear) {
-		studentDataText += 'They are currently majoring in ' + student.major + ', with a graduation year in ' + student.gradyear + '.';
+		studentDataText += 'They are currently majoring in ' + student.major + ', with a year status of ' + student.gradyear + '.';
 	}
 
 	studentDataBodyContainer.innerHTML = studentDataText;
@@ -696,7 +689,9 @@ function handleServerAdminStudentDataResponse(data) {
 	table.className = 'events-table';
 	table.border = '0';
 
-	studentEventBodyContainer.appendChild(table);
+	if (allEventsCount > 0) {
+		studentEventBodyContainer.appendChild(table);
+	}
 
 	for(var i in student.all_events) {
 
@@ -714,6 +709,11 @@ function handleServerAdminStudentDataResponse(data) {
 		tr.innerHTML += '<td style="text-align:right;color:' + color + ';">' + student.all_events[i].event_name + '</td>';
 
 		table.appendChild(tr);
+	}
+
+	// handle semesters where no events occurred
+	if(allEventsCount <= 0) {
+		studentEventBodyContainer.innerHTML = 'There is no event data to display for this semester.';
 	}
 
 	resultsContent.appendChild(studentEventBodyContainer);
