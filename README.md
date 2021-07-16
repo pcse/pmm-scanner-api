@@ -1,3 +1,84 @@
+Setting Up Deployment Workflow
+==============================
+
+How do we actually make changes to - and deploy this thing to prod?
+
+## Setting up local environment:
+
+Open this project up in your favorite IDE or text editor. Make changes, and push them using a new branch.
+Open a Pull Request from that branch against `master`.
+
+Have someone review and approve your PR. Once it's merged, please cleanup your remote branch.
+
+## Deploying to production:
+
+We'll assume your local git environment looks like this:
+
+```
+$ git remote -v
+origin  git@github.com:pcse/pmm-scanner-api.git (fetch)
+origin  git@github.com:pcse/pmm-scanner-api.git (push)
+```
+
+We'll add another `remote` ref. This will point to the git repo hosted in `Fenrir` (the production machine running this at CNU).
+*Pushing to this new remote ref will automatically update the live-running code in Fenrir and automatically restart the server so that new changes take effect immediately. This all happens automatically, nothing additional to setup or do on your end.*
+
+**Please note that Fenrir can only be accessed from within the PCSE subnet, therefore, pushing to prod will naturally require that you can reach Fenrir from within this subnet** 
+
+```
+$ git remote add fenrir ssh://juan@fenrir.pcs.cnu.edu:/home/juan/pcse-scanner-api
+```
+
+Your git remotes should now look like this:
+
+```
+$ git remote -v
+origin  git@github.com:pcse/pmm-scanner-api.git (fetch)
+origin  git@github.com:pcse/pmm-scanner-api.git (push)
+fenrir  ssh://juan@fenrir:/home/juan/pcse-scanner-api (fetch
+fenrir  ssh://juan@fenrir:/home/juan/pcse-scanner-api (push)
+```
+
+In order to push to prod without worrying about a password / credentials, simply add your public SSH key to the `~/.ssh/authorized_keys` file in Fenrir.
+Refer to the admin documentation to know how to access Fenrir via SSH, or ask the system administrator for more information.
+**Make sure to append your key, rather replacing all existing file contents with a new one.**
+
+## Deploying
+
+Once we're all setup with the steps above, deploying new code to production is as easy as:
+
+```
+$ git push fenrir master
+```
+
+Below is a suggested development workflow:
+
+1. Deploy new changes to the GitHub repo in a new branch. Have your Pull Request reviewed, tested, and merged.
+
+```
+# origin == github repo 
+$ git push origin my_new_branch
+```
+
+2. Once your Pull Request is merged onto the master branch in the GitHub repo, update your local environment:
+
+```
+$ git checkout master
+$ git reset --hard origin/master
+```
+
+3. Make sure the master branch now contains all changes recently merged upstream:
+
+```
+$ git log
+```
+
+4. Deploy to production
+
+```
+$ git push fenrir master
+```
+
 API Documentation
 ===============
 
