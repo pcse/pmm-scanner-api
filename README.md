@@ -64,6 +64,7 @@ $ git push origin my_new_branch
 
 ```
 $ git checkout master
+$ git fetch origin master
 $ git reset --hard origin/master
 ```
 
