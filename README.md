@@ -8,6 +8,35 @@ How do we actually make changes to - and deploy this thing to prod?
 Open this project up in your favorite IDE or text editor. Make changes, and push them using a new branch.
 Open a Pull Request from that branch against `master`.
 
+### Setting up a local database
+
+Before running your changes locally, you'll want to port forward the port from the MySQL database running on Fenrir.
+This will allow you to run a local copy of the API server against a valid working instance of the database.
+
+```
+$ ssh -NL 3306:127.0.0.1:3306 juan@fenrir.pcs.cnu.edu
+```
+
+### Running a server instance locally
+
+With the Fenrir database accessible from your local environment, try running the server.
+Make sure you're in the root of this repo, then:
+
+```
+$ node .
+```
+
+You'll know this worked because the first line of output printed will be:
+
+```
+MYSQL Successfully connected to the mysql server. Setting up database...
+```
+
+If this is not the case, make sure you're on the PCSE subnet (e.g. WiFi-CNU from within the PCSE department).
+Also, make sure you've added your public SSH key to the `authorized_keys` file in Fenrir.
+See the Admin documentation or contact your system administrator for more information.
+
+Finally, with a local copy of the server running, make some changes and test them. You can access the web console by navigating to `http://localhost:7777` in your browser.
 Have someone review and approve your PR. Once it's merged, please cleanup your remote branch.
 
 ## Deploying to production:
