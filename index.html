@@ -317,7 +317,7 @@ function handleURL(urlPieces) {
 	var urlParams = urlPieces.split(window.location.host);
 	var path = urlParams && urlParams.length > 1 ? urlParams[1] : null;
 	
-	if(path == '/api/register') {
+	if(path == '/api/register' || path == '/register') {
 		handleRegistrationView();
 	} else if(path == '/clare' || path == '/admin') {
 		handleAdminView();

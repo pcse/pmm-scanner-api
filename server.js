@@ -7,58 +7,49 @@
  */
 
 var os = require('os');
+var auth 	= require('./private/auth.js');
 
-// detect if in production at CNU server
-if(os.hostname() == 'fenrir') {
-	process.env.OPENSHIFT_MYSQL_DB_USER = 'root';
-	process.env.OPENSHIFT_MYSQL_DB_PASS = 'pcse';
-	process.env.OPENSHIFT_MYSQL_DB_PORT = '3306';
-
-	process.env.OPENSHIFT_NODEJS_PORT 	= 7777;
-} else {
-	// TODO(juanvallejo): we'll need to clean up these names to remove any OpenShift references at some point
-	process.env.OPENSHIFT_MYSQL_DB_USER = 'root';
-	process.env.OPENSHIFT_MYSQL_DB_PASS = 'pcse';
-	process.env.OPENSHIFT_MYSQL_DB_PORT = '3306';
+console.log('Initializing auth configuration...');
+try {
+	auth.init();
+} catch(e) {
+	console.log('FATAL', 'AUTH', 'unable to initialize auth credentials. See https://github.com/pcse/pmm-scanner-api/blob/master/private/README.md for help.', e);
+	prcess.exit(1);
 }
 
+var PROD = os.hostname() == 'fenrir';
+
 // define runtime variables
-var MYSQL_DB_HOST 	= process.env.OPENSHIFT_MYSQL_DB_HOST 	|| '127.0.0.1';
-var MYSQL_DB_PORT 	= process.env.OPENSHIFT_MYSQL_DB_PORT 	|| '3307';
-var MYSQL_DB_USER 	= process.env.OPENSHIFT_MYSQL_DB_USER 	|| 'root';
-var MYSQL_DB_PASS 	= process.env.OPENSHIFT_MYSQL_DB_PASS 	|| '';
+const APP_MAIN_HOST 	= '0.0.0.0';
+const APP_MAIN_PORT 	= 7777;
 
-var APP_MAIN_HOST 	= process.env.OPENSHIFT_NODEJS_IP 		|| '0.0.0.0';
-var APP_MAIN_PORT 	= process.env.OPENSHIFT_NODEJS_PORT 	|| 7777;
+const ERR_NO_MYSQL_CONNECTION 	= "Unable to access the database at this time. Please try again later.";
+const ERR_API_INVALID_ENDPOINT 	= "Invalid endpoint. Check your URL and try again. (/api/v1/key/value)";
+const ERR_API_MISSING_CONTEXT 	= "A valid context is required. Please edit your request to include (/context/[students|events])";
+const ERR_API_DB_ERR 				= "Server error, it's not you, it's me. Please report this to juan.vallejo.12@cnu.edu.";
+const ERR_API_UNAUTHORIZED 		= "Request is not authorized to access the API.";
+const ERR_API_USER_NOT_ACTIVE 	= "Request is not authorized. API access for this email is not enabled.";
+const ERR_FILEIO_404 				= "404. The page you are looking for cannot be found.";
 
-var ERR_NO_MYSQL_CONNECTION 	= "Unable to access the database at this time. Please try again later.";
-var ERR_API_INVALID_ENDPOINT 	= "Invalid endpoint. Check your URL and try again. (/api/v1/key/value)";
-var ERR_API_MISSING_CONTEXT 	= "A valid context is required. Please edit your request to include (/context/[students|events])";
-var ERR_API_DB_ERR 				= "Server error, it's not you, it's me. Please report this to juan.vallejo.12@cnu.edu.";
-var ERR_API_UNAUTHORIZED 		= "Request is not authorized to access the API.";
-var ERR_API_USER_NOT_ACTIVE 	= "Request is not authorized. API access for this email is not enabled.";
-var ERR_FILEIO_404 				= "404. The page you are looking for cannot be found.";
-
-var ERR_CODE_1_SQL_ERR 				= -1;
-var ERR_CODE_2_SQL_OUTPUT_NOT_JSON 	= -2;
-var ERR_CODE_SQL_DISCONNECTED 		= -3;
-var ERR_CODE_API_UNAUTHORIZED 		= -4;
-var ERR_CODE_API_USER_NOT_ACTIVE 	= -5;
-var ERR_CODE_FILEIO_404 			= -6;
+const ERR_CODE_1_SQL_ERR 				= -1;
+const ERR_CODE_2_SQL_OUTPUT_NOT_JSON 	= -2;
+const ERR_CODE_SQL_DISCONNECTED 		= -3;
+const ERR_CODE_API_UNAUTHORIZED 		= -4;
+const ERR_CODE_API_USER_NOT_ACTIVE 	= -5;
+const ERR_CODE_FILEIO_404 			= -6;
 
 var fs 		= require('fs');
 var socket 	= require('socket.io');
 var http 	= require('http');
 var fcsv 	= require('fast-csv');
 
-var auth 	= require('./private/auth.js');
 var date 	= require('./lib/date.js');
 
 var mysql   = require('mysql').createConnection({
-	host    : MYSQL_DB_HOST,
-	port    : MYSQL_DB_PORT,
-	user    : MYSQL_DB_USER,
-	password: MYSQL_DB_PASS,
+	host    : '127.0.0.1',
+	port    : auth.getDatabasePort(),
+	user    : auth.getDatabaseUser(),
+	password: auth.getDatabasePassword(),
 	database: 'pmm'
 });
 
@@ -66,9 +57,9 @@ var Hashids = require('hashids');
 var emailjs = require('emailjs');
 
 var emailServer = emailjs.server.connect({
-	user: 'cnuapps.me@gmail.com',
-	password: 'cnuapps2016',
-	host: 'smtp.gmail.com',
+	user: auth.getEmailUser(),
+	password: auth.getEmailPassword(),
+	host: auth.getEmailHost(),
 	tls: true,
 	port: 587
 });
@@ -77,6 +68,7 @@ var requestRouter = {
 	'/': 'index.html',
 	'/admin' : 'index.html',
 	'/clare': 'index.html',
+	'/register': 'index.html',
 	'/api/register': 'index.html'
 };
 
@@ -1118,51 +1110,6 @@ function initSocketListener() {
 		});
 
 	});
-}
-
-/**
- * Makes a request to the public API
- * and returns values from server
- */
-function requestUsingAPI(endpoint, callback) {
-
-	var ERROR_OCCURRED = false;
-
-	var request = http.request({
- 		host: 'fenrir.pcs.cnu.edu',
- 		port: '7777',
- 		path: endpoint,
- 		method: 'GET',
- 		headers: {
- 			'Authentication': 'email=' + auth.email + '; key=' + auth.key
- 		}
-
- 	}, function(response) {
-
- 		var data = '';
-
- 		response.on('data', function(chunk) {
- 			data += chunk;
- 		});
-
- 		response.on('end', function() {
- 			if(typeof callback == 'function') {
- 				callback.call(this, ERROR_OCCURRED, data);
- 			}
- 		});
-
- 	});
-
- 	request.end();
-
- 	request.on('error', function(err) {
-
- 		ERROR_OCCURRED = err;
-
- 		if(typeof callback == 'function') {
- 			callback.call(this, ERROR_OCCURRED);
- 		}
- 	});
 }
 
 /**
