@@ -3,10 +3,13 @@
  * for authenticating app requests
  */
 
+var os = require('os');
 var fs = require('fs');
 var path = require('path');
 
-const CONFIG_FILE = process.env.HOME + '/.cnuapps/api/secrets.json';
+const PROD = os.hostname() == 'fenrir';
+const HOME_PATH = PROD ? '/home/juan' : process.env.HOME;
+const CONFIG_FILE = HOME_PATH + '/.cnuapps/api/secrets.json';
 
 var auth = {
 	db: {},
